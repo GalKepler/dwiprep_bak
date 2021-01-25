@@ -1,1 +1,2 @@
-nibabel~=1.6
+nipype~=1.6
+pybids~=12.4
