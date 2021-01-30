@@ -1,7 +1,8 @@
 from dwiprep import messages
 from dwiprep.utils.fetch_files import fetch_additional_files
-from dwiprep.utils import conversions
+from dwiprep.utils import conversions, mrtrix_functions
 from pathlib import Path
+from termcolor import colored
 import warnings
 
 
@@ -19,8 +20,6 @@ class PreprocessPipeline:
         self.validate_output(output_dir)
         self.output_dir = Path(output_dir)
 
-        self.convert_format()
-
     def validate_input(self, input_dict: dict):
         """
         Validates that the keys passed to the class correspond with the ones expected.
@@ -34,6 +33,7 @@ class PreprocessPipeline:
                 message = messages.BAD_INPUT.format(
                     key=key, keys=self.INPUT_KEYS
                 )
+                message = colored(message, "red")
                 raise ValueError(message)
 
     def validate_output(self, output_dir: Path):
@@ -54,8 +54,8 @@ class PreprocessPipeline:
                 message = messages.OUTPUT_NOT_EXIST.format(
                     output_dir=output_dir
                 )
-                warnings.warn(messages)
-                output_dir.mkdir()
+                warnings.warn(message)
+                session_derivatives.mkdir()
 
     def infer_longitudinal(self):
         """
@@ -69,6 +69,7 @@ class PreprocessPipeline:
         value_type = set([type(value) for value in self.input_dict.values()])
         if len(value_type) > 1:
             message = messages.BAD_VALUE_TYPS.format(value_types=value_type)
+            message = colored(message, "red")
             raise ValueError(message)
         else:
             value_type = value_type.pop()
@@ -109,17 +110,81 @@ class PreprocessPipeline:
                 )
         self.input_dict = expended_dict
 
-    def convert_format(self, session: str):
+    def convert_format(
+        self,
+        session: str,
+        session_dict: dict,
+        target_dir: Path,
+    ):
         """
         Convert NIfTI files to .mif format for compatability with MRTrix3's commands.
+        Parameters
+        ----------
+        session : str
+            [key representing a session within the dataset.]
+        session_dict : dict
+            [Dictionary containing paths to session-relevant files.]
+        target_dir : Path
+            [Path to user-defined session's output directory.]
         """
-        target_dir = self.output_dict.get(session).get("directory")
-        session_dict = self.input_dict.get(session)
         for modality, vals in session_dict.items():
             target_file = target_dir / f"{modality}.mif"
             if target_file.exists():
                 message = messages.FILE_EXISTS.format(fname=target_file)
+                message = colored(message, "yellow")
                 warnings.warn(message)
             else:
-                conversions.mrtrix_conversion(vals, target_file)
+                converter = conversions.mrtrix_conversion(vals, target_file)
+                message = messages.CONVERT_TO_MIF.format(
+                    in_file=vals.get("nii"),
+                    out_file=target_file,
+                    command=converter.cmdline,
+                )
+                message = colored(message, "green")
+                print(message)
+                converter.run()
+
             self.output_dict[session][f"{modality}_mif"] = target_file
+
+    def average_b0(
+        self,
+        session: str,
+        target_dir: Path,
+    ):
+        """
+        Calculate DWI series' mean B0 image for later registrations
+        Parameters
+        ----------
+        session : str
+            [key representing a session within the dataset.]
+        target_dir : Path
+            [Path to user-defined session's output directory.]
+        """
+        in_file = self.output_dict.get(session).get("ap_mif")
+        out_b0s = target_dir / "b0s.mif"
+        out_file = target_dir / "mean_b0.mif"
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=target_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            b0s_extracter, b0s_averager = mrtrix_functions.extract_b0(
+                in_file, out_b0s, out_file
+            )
+            message = messages.AVERAGE_B0.format(
+                in_file=in_file,
+                out_b0s=out_b0s,
+                command_1=b0s_extracter.cmdline,
+                out_file=out_file,
+                command_2=b0s_averager.cmdline,
+            )
+            message = colored(message, "green")
+            print(message)
+            b0s_averager.run()
+        self.output_dict[session]["mean_b0"] = out_file
+
+    def run_pipeline(self):
+        for session, session_dict in self.input_dict.items():
+            target_dir = self.output_dict.get(session).get("directory")
+            self.convert_format(session, session_dict, target_dir)
+            self.average_b0(session, target_dir)

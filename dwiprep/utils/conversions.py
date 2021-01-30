@@ -14,4 +14,4 @@ def mrtrix_conversion(inputs: dict, output: Path):
         mrconvert.inputs.in_bval = bval
     mrconvert.inputs.args = f"-json_import {json}"
     mrconvert.inputs.out_file = output
-    mrconvert.run()
+    return mrconvert
