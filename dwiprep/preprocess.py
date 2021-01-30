@@ -286,6 +286,88 @@ class PreprocessPipeline:
             message = colored(message, "green")
             print(message)
             executer.run()
+        self.output_dict[session]["preprocessed"] = out_file
+
+    def calculate_metrics(self, session: Path, target_dir: Path):
+        """
+        Calculate various metrics of DWI series (MD, FA, etc.)
+        Parameters
+        ----------
+        session : str
+            key representing a session within the dataset.
+        target_dir : Path
+            Path to user-defined session's output directory.
+        """
+        in_file = self.output_dict.get(session).get("preprocessed")
+        tensor_dir = target_dir / "tensors_parameters"
+        if not tensor_dir.exists():
+            message = messages.OUTPUT_NOT_EXIST.format(output_dir=tensor_dir)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+            tensor_dir.mkdir()
+
+        out_files = {
+            key: tensor_dir / f"{value}.mif"
+            for key, value in zip(
+                [
+                    "tensor",
+                    "adc",
+                    "fa",
+                    "ad",
+                    "rd",
+                    "cl",
+                    "cp",
+                    "cs",
+                    "value",
+                    "vector",
+                ],
+                [
+                    "tensor",
+                    "MD",
+                    "FA",
+                    "AD",
+                    "RD",
+                    "CL",
+                    "CP",
+                    "CS",
+                    "EigenValue",
+                    "EigenVector",
+                ],
+            )
+        }
+        flags = [val.exists() for val in out_files.values()]
+        if all(flags):
+            fname = ""
+            for val in out_files.values():
+                fname += f"\n{val}"
+            message = messages.FILE_EXISTS.format(fname=fname)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            tensor_exec, metrics_exec = mrtrix_functions.calculate_metrics(
+                in_file, out_files.copy()
+            )
+            tensor, md, fa, ad, rd, cl, cp, cs, val, vec = out_files.values()
+            message = messages.CALCULATE_TENSOR.format(
+                in_file=in_file,
+                tensor=tensor,
+                command_1=tensor_exec.cmdline,
+                md=md,
+                fa=fa,
+                ad=ad,
+                rd=rd,
+                cl=cl,
+                cp=cp,
+                cs=cs,
+                val=val,
+                vec=vec,
+                command_2=metrics_exec.cmdline,
+            )
+            message = colored(message, "green")
+            print(message)
+            metrics_exec.run()
+        out_files["directory"] = tensor_dir
+        self.output_dict[session]["tensors"] = out_files
 
     def run_pipeline(self):
         for session, session_dict in self.input_dict.items():
@@ -295,3 +377,4 @@ class PreprocessPipeline:
             self.merge_phase_opposites(session, session_dict, target_dir)
             self.correct_sdc(session, target_dir)
             self.correct_bias_field(session, target_dir)
+            self.calculate_metrics(session, target_dir)

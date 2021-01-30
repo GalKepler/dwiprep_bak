@@ -100,3 +100,29 @@ def correct_bias_field(in_file: Path, out_file: Path):
     bias_correct.inputs.in_file = in_file
     bias_correct.inputs.out_file = out_file
     return bias_correct, algorithm
+
+
+def calculate_metrics(in_file: Path, out_files: dict):
+    """
+    Calculate various DWI metrics based on Diffusion's kurtosis tensor estimation
+    Parameters
+    ----------
+    in_file : Path
+        Path to preprocessed DWI series
+    out_files : dict
+        A dictionary containing paths to various metrics to be calculated
+    """
+    tensor = out_files.pop("tensor")
+    tsr = mrt.FitTensor()
+    tsr.inputs.in_file = in_file
+    tsr.inputs.out_file = tensor
+    tsr.inputs.args = "-quiet"
+    if not tensor.exists():
+        tsr.run()
+    comp = mrt.TensorMetrics()
+    comp.inputs.in_file = tensor
+    comp_args = ""
+    for key, val in out_files.items():
+        comp_args += f"-{key} {val} "
+    comp.inputs.args = comp_args
+    return tsr, comp

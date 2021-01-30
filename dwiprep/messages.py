@@ -12,7 +12,7 @@ BAD_VALUE_TYPES = "Invalid value type(s): {value_types}. Values must be uniform 
 
 JSON_NOT_FOUND = "Couldn't find corresponding json file for {fname} NIfTI. Please make sure that a corresponding json file exists at under the same directory: ({dname})."
 ADDITIONAL_NOT_FOUND = "Couldn't find corresponding {parameter} file for {fname} NIfTI. Please make sure that a corresponding {parameter} file exists at under the same directory: ({dname})."
-FILE_EXISTS = "Tried to create an existing file: {fname}. To avoid unneccesary computations, This procedure is skipped. To re-create the file, please delete the existing one."
+FILE_EXISTS = "Tried to create an existing file\s: {fname}. To avoid unneccesary computations, This procedure is skipped. To re-create the file\s, please delete the existing one."
 ANTS_NOT_FOUND = """Tried to use ANTs N4 algorithm for B1 inhomogenity correction, but couldn't find it under the environment variable "ANTSPATH": {antspath}.
 Please note that it is much preferable to use ANTs N$ algorithm for this kind of corrections, and we encourage you to make sure it's properly installed.
 Proceeding with FSL's "fast" command, which is sub-optimal."""
@@ -49,6 +49,22 @@ CORRECT_BIAS = """Correcting for B1 field inhomogenity using {algorithm}'s algor
 Input file: {in_file}
 Output file: {out_file}
 Command: {command}
+"""
+CALCULATE_TENSOR = """Generating maps of tensor-derived parameters...
+Input file: {in_file}
+Output files: 
+    1. Tensor image: {tensor}
+    Command: {command_1}
+    2. Mead Diffusivity image: {md}
+    3. Fractional Anisotropy image: {fa}
+    4. Axial Diffusivity image: {ad}
+    5. Radial Diffusivity image: {rd}
+    6. Linearity metric image: {cl}
+    7. Planarity metric image: {cp}
+    8. Sphericity metric image: {cs}
+    9. Eigen value(s) image: {val}
+    10. Eigen vector(s) image: {vec}
+    Command: {command_2}
 """
 
 
