@@ -1,9 +1,10 @@
+import warnings
+import os
 from dwiprep import messages
 from dwiprep.utils.fetch_files import fetch_additional_files
 from dwiprep.utils import conversions, mrtrix_functions
 from pathlib import Path
 from termcolor import colored
-import warnings
 
 
 class PreprocessPipeline:
@@ -164,7 +165,7 @@ class PreprocessPipeline:
         out_b0s = target_dir / "b0s.mif"
         out_file = target_dir / "mean_b0.mif"
         if out_file.exists():
-            message = messages.FILE_EXISTS.format(fname=target_file)
+            message = messages.FILE_EXISTS.format(fname=out_file)
             message = colored(message, "yellow")
             warnings.warn(message)
         else:
@@ -183,8 +184,42 @@ class PreprocessPipeline:
             b0s_averager.run()
         self.output_dict[session]["mean_b0"] = out_file
 
+    def merge_phase_opposites(
+        self, session: str, session_dict: dict, target_dir: Path
+    ):
+        """
+        Merge phase opposites (AP-PA) images across the 4th dimension for compatibillity with dwifslpreproc function
+        Parameters
+        ----------
+         session : str
+            [key representing a session within the dataset.]
+        session_dict : dict
+            [Dictionary containing paths to session-relevant files.]
+        target_dir : Path
+            [Path to user-defined session's output directory.]
+        """
+        ap, pa = [
+            self.output_dict.get(session).get(key)
+            for key in ["mean_b0", "pa_mif"]
+        ]
+        out_file = target_dir / "merged_phasediff.mif"
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            cmd = mrtrix_functions.merge_phasediff(ap, pa, out_file)
+            message = messages.MERGE_PHASEDIFF.format(
+                ap=ap, pa=pa, merged=out_file, command=cmd
+            )
+            message = colored(message, "green")
+            print(message)
+            os.system(cmd)
+        self.output_dict[session]["merged_phasediff"] = out_file
+
     def run_pipeline(self):
         for session, session_dict in self.input_dict.items():
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
             self.average_b0(session, target_dir)
+            self.merge_phase_opposites(session, session_dict, target_dir)

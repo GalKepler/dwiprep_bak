@@ -31,3 +31,24 @@ def extract_b0(in_file: Path, out_b0s: Path, out_file: Path):
     mrmath.inputs.axis = 3
     mrmath.inputs.out_file = out_file
     return dwiextract, mrmath
+
+
+def merge_phasediff(ap: Path, pa: Path, out_file: Path):
+    """
+    Concatenates phase-opposites (AP-PA) across the 4th dimension
+    Parameters
+    ----------
+    ap : Path
+        [Path to DWI series AP's mean B0 image]
+    pa : Path
+        [Path to DWI series PA image]
+    out_file : Path
+        [description]
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+    cmd = f"mrcat {ap} {pa} {out_file} -axis 3"
+    return cmd

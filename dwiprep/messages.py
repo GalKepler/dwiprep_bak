@@ -18,7 +18,7 @@ FILE_EXISTS = "Tried to create an existing file: {fname}. To avoid unneccesary c
 
 CONVERT_TO_MIF = """Converting file to MRTrix3's .mif format for better compatability with used functions...
 Input file: {in_file}
-Output files: {out_file}
+Output file: {out_file}
 Command: {command}
 """
 AVERAGE_B0 = """Calculating DWI series' mean B0 image...
@@ -28,6 +28,13 @@ Output files:
     Command: {command_1}
     2. Mean B0 image: {out_file}
     Command: {command_2}
+"""
+MERGE_PHASEDIFF = """Concatenating opposite phase-encoded B0 images...
+Inputs files:
+    1. AP-encoded B0: {ap}
+    2. PA-encoded B0: {pa}
+Output file: {merged}
+Command: {command}
 """
 
 
