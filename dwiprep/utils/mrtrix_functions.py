@@ -1,3 +1,4 @@
+import subprocess
 from nipype.interfaces import mrtrix3 as mrt
 from pathlib import Path
 
@@ -43,7 +44,7 @@ def merge_phasediff(ap: Path, pa: Path, out_file: Path):
     pa : Path
         [Path to DWI series PA image]
     out_file : Path
-        [description]
+        [Path to concatenated phase-opposite B0 image]
 
     Returns
     -------
@@ -52,3 +53,50 @@ def merge_phasediff(ap: Path, pa: Path, out_file: Path):
     """
     cmd = f"mrcat {ap} {pa} {out_file} -axis 3"
     return cmd
+
+
+def correct_sdc(ap: Path, merged: Path, out_file: Path):
+    """
+    Use MRTrix3's dwifslpreproc function to perform susceptabillity distortion correction on DWI series
+    Parameters
+    ----------
+    ap : Path
+        [Path to original DWI series]
+    merged : Path
+        [Path to concatenated phase-opposite B0 image]
+    out_file : Path
+        [Path to output susceptabillity corrected DWI series]
+    """
+    pe_dir = subprocess.check_output(
+        ["mrinfo", str(ap), "-property", "PhaseEncodingDirection"]
+    )
+    pe_dir = pe_dir.decode("utf-8").replace("\n", "")
+    cmd = f"dwifslpreproc {ap} {out_file} -pe_dir {pe_dir} -align_seepi -rpe_pair -eddy_options ' --slm=linear' -se_epi {merged} -nthreads 16"
+    return cmd
+
+
+def correct_bias_field(in_file: Path, out_file: Path):
+    """
+    Perform DWI B1 field inhomogenity correction
+    Parameters
+    ----------
+    in_file : Path
+        [Path to SD-corrected DWI series]
+    out_file : Path
+        [Path to output B1 bias-field corrected DWI series]
+    """
+    ants_flag = (
+        subprocess.check_output(["N4BiasFieldCorrection", "--version"])
+        .decode("utf-8")
+        .lower()[:12]
+    ) == "ants version"
+    bias_correct = mrt.DWIBiasCorrect()
+    if ants_flag:
+        algorithm = "ANTs"
+        bias_correct.inputs.use_ants = True
+    else:
+        algorithm = "FSL"
+        bias_correct.inputs.use_fsl = True
+    bias_correct.inputs.in_file = in_file
+    bias_correct.inputs.out_file = out_file
+    return bias_correct, algorithm

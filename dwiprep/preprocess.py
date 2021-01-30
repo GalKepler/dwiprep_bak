@@ -13,7 +13,7 @@ class PreprocessPipeline:
     def __init__(self, input_dict: dict, output_dir: Path):
         self.validate_input(input_dict)
         self.input_dict = input_dict
-        self.rearange_inputs()
+        self.rearrange_inputs()
         self.longitudinal = False
         self.infer_longitudinal()
         self.expand_input_dict()
@@ -77,7 +77,7 @@ class PreprocessPipeline:
         if value_type == list:
             self.longitudinal = True
 
-    def rearange_inputs(self):
+    def rearrange_inputs(self):
         """
         Rearanges inputs dictionary to match corresponding sessions for ease of use
         """
@@ -191,12 +191,12 @@ class PreprocessPipeline:
         Merge phase opposites (AP-PA) images across the 4th dimension for compatibillity with dwifslpreproc function
         Parameters
         ----------
-         session : str
+        session : str
             [key representing a session within the dataset.]
         session_dict : dict
             [Dictionary containing paths to session-relevant files.]
         target_dir : Path
-            [Path to user-defined session's output directory.]
+            Path to user-defined session's output directory.
         """
         ap, pa = [
             self.output_dict.get(session).get(key)
@@ -217,9 +217,81 @@ class PreprocessPipeline:
             os.system(cmd)
         self.output_dict[session]["merged_phasediff"] = out_file
 
+    def correct_sdc(self, session: str, target_dir: Path):
+        """
+        Use MRTrix3's dwifslpreproc function to perform susceptabillity distortion correction on DWI series
+        Parameters
+        ----------
+        session : str
+            key representing a session within the dataset.
+        target_dir : Path
+            Path to user-defined session's output directory.
+        """
+        in_file, merged_phasediff = [
+            self.output_dict.get(session).get(key)
+            for key in ["ap_mif", "merged_phasediff"]
+        ]
+        out_file = target_dir / "SDC_corrected.mif"
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            cmd = mrtrix_functions.correct_sdc(
+                in_file, merged_phasediff, out_file
+            )
+            message = messages.CORRECT_SDC.format(
+                ap=in_file,
+                merged=merged_phasediff,
+                out_file=out_file,
+                command=cmd,
+            )
+            message = colored(message, "green")
+            print(message)
+            os.system(cmd)
+        self.output_dict[session]["sdc_corrected"] = out_file
+
+    def correct_bias_field(self, session: str, target_dir: Path):
+        """
+        Perform DWI B1 field inhomogenity correction
+        Parameters
+        ----------
+        session : str
+            key representing a session within the dataset.
+        target_dir : Path
+            Path to user-defined session's output directory.
+        """
+        in_file = self.output_dict.get(session).get("sdc_corrected")
+        out_file = target_dir / "bias_corrected.mif"
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            executer, algorithm = mrtrix_functions.correct_bias_field(
+                in_file, out_file
+            )
+            if algorithm.lower() == "fsl":
+                message = messages.ANTS_NOT_FOUND.format(
+                    antspath=os.environ.get("ANTSPATH")
+                )
+                message = colored(message, "yellow")
+                warnings.warn(message)
+            message = messages.CORRECT_BIAS.format(
+                algorithm=algorithm,
+                in_file=in_file,
+                out_file=out_file,
+                command=executer.cmdline,
+            )
+            message = colored(message, "green")
+            print(message)
+            executer.run()
+
     def run_pipeline(self):
         for session, session_dict in self.input_dict.items():
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
             self.average_b0(session, target_dir)
             self.merge_phase_opposites(session, session_dict, target_dir)
+            self.correct_sdc(session, target_dir)
+            self.correct_bias_field(session, target_dir)

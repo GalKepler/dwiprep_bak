@@ -13,7 +13,9 @@ BAD_VALUE_TYPES = "Invalid value type(s): {value_types}. Values must be uniform 
 JSON_NOT_FOUND = "Couldn't find corresponding json file for {fname} NIfTI. Please make sure that a corresponding json file exists at under the same directory: ({dname})."
 ADDITIONAL_NOT_FOUND = "Couldn't find corresponding {parameter} file for {fname} NIfTI. Please make sure that a corresponding {parameter} file exists at under the same directory: ({dname})."
 FILE_EXISTS = "Tried to create an existing file: {fname}. To avoid unneccesary computations, This procedure is skipped. To re-create the file, please delete the existing one."
-
+ANTS_NOT_FOUND = """Tried to use ANTs N4 algorithm for B1 inhomogenity correction, but couldn't find it under the environment variable "ANTSPATH": {antspath}.
+Please note that it is much preferable to use ANTs N$ algorithm for this kind of corrections, and we encourage you to make sure it's properly installed.
+Proceeding with FSL's "fast" command, which is sub-optimal."""
 ### Messages ###
 
 CONVERT_TO_MIF = """Converting file to MRTrix3's .mif format for better compatability with used functions...
@@ -34,6 +36,18 @@ Inputs files:
     1. AP-encoded B0: {ap}
     2. PA-encoded B0: {pa}
 Output file: {merged}
+Command: {command}
+"""
+CORRECT_SDC = """Correcting for susceptabillity distortion artifects...
+Input files:
+    1. DWI series: {ap}
+    2. Concatenated phase-opposite B0s: {merged}
+Output file: {out_file}
+Command: {command}
+"""
+CORRECT_BIAS = """Correcting for B1 field inhomogenity using {algorithm}'s algorithm.
+Input file: {in_file}
+Output file: {out_file}
 Command: {command}
 """
 
