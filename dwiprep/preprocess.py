@@ -2,7 +2,7 @@ import warnings
 import os
 from dwiprep import messages
 from dwiprep.utils.fetch_files import fetch_additional_files
-from dwiprep.utils import conversions, mrtrix_functions
+from dwiprep.utils import conversions, mrtrix_functions, fsl_functions
 from pathlib import Path
 from termcolor import colored
 
@@ -11,11 +11,11 @@ class PreprocessPipeline:
     INPUT_KEYS = "anatomical", "ap", "pa"
 
     def __init__(self, input_dict: dict, output_dir: Path):
+        self.longitudinal = False
         self.validate_input(input_dict)
         self.input_dict = input_dict
-        self.rearrange_inputs()
-        self.longitudinal = False
         self.infer_longitudinal()
+        self.rearrange_inputs()
         self.expand_input_dict()
 
         self.validate_output(output_dir)
@@ -150,6 +150,8 @@ class PreprocessPipeline:
     def average_b0(
         self,
         session: str,
+        in_file: Path,
+        out_suffix: str,
         target_dir: Path,
     ):
         """
@@ -161,9 +163,9 @@ class PreprocessPipeline:
         target_dir : Path
             [Path to user-defined session's output directory.]
         """
-        in_file = self.output_dict.get(session).get("ap_mif")
-        out_b0s = target_dir / "b0s.mif"
-        out_file = target_dir / "mean_b0.mif"
+        # in_file = self.output_dict.get(session).get("ap_mif")
+        out_b0s = target_dir / f"b0s.{out_suffix}"
+        out_file = target_dir / f"mean_b0.{out_suffix}"
         if out_file.exists():
             message = messages.FILE_EXISTS.format(fname=out_file)
             message = colored(message, "yellow")
@@ -369,12 +371,124 @@ class PreprocessPipeline:
         out_files["directory"] = tensor_dir
         self.output_dict[session]["tensors"] = out_files
 
-    def run_pipeline(self):
+    def run_corrections(self):
         for session, session_dict in self.input_dict.items():
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
-            self.average_b0(session, target_dir)
+            self.average_b0(
+                session, session_dict.get("ap_mif"), "mif", target_dir
+            )
             self.merge_phase_opposites(session, session_dict, target_dir)
             self.correct_sdc(session, target_dir)
             self.correct_bias_field(session, target_dir)
             self.calculate_metrics(session, target_dir)
+
+    def convert_to_nii(self, in_files: list, sessions: list, target_dir: Path):
+        """
+        Convert MRTrix's .mif format to NIfTI for compatability with FSL's funcitons
+        Parameters
+        ----------
+        in_files : list
+            List of files to convert
+        target_dir : Path
+            Path to output directory
+        """
+        out_files = []
+        for in_file, session in zip(in_files, sessions):
+            out_fname = f"{in_file.name.split('.')[0]}_{session}.nii.gz"
+            out_file = target_dir / out_fname
+            if out_file.exists():
+                message = messages.FILE_EXISTS.format(fname=out_file)
+                message = colored(message, "yellow")
+                warnings.warn(message)
+            else:
+                executer = conversions.mrtrix_conversion(
+                    {"nii": in_file}, out_file
+                )
+                message = messages.CONVERT_TO_NII.format(
+                    in_file=in_file,
+                    out_file=out_file,
+                    command=executer.cmdline,
+                )
+                message = colored(message, "green")
+                print(message)
+                executer.run()
+            out_files.append(out_file)
+        return out_files
+
+    def init_longitudinal_registrations(self, registrations_dir: Path):
+        """
+        Initate longitudinal DWI series registrations to MNI space
+        Raises
+        ------
+        NotImplementedError
+            Registrations of more than 2 sessions is not yet implamented
+        """
+
+        if len(self.input_dict.keys()) > 2:
+            raise NotImplementedError(messages.MORE_THAN_TWO_SESSIONS)
+        dwi_1, dwi_2 = [
+            self.output_dict.get(session).get("preprocessed")
+            for session in self.input_dict.keys()
+        ]
+        if not dwi_1 or not dwi_2:
+            self.run_corrections()
+
+        #### AVERAGE B0s #####
+
+        anat_1, anat_2 = [
+            self.input_dict[session]["anatomical"]["nii"]
+            for session in self.input_dict.keys()
+        ]
+        anat_1, anat_2 = self.convert_to_nii(
+            [anat_1, anat_2], list(self.input_dict.keys()), registrations_dir
+        )
+        return {"fas": [fa_1, fa_2], "anats": [anat_1, anat_2]}
+
+    def coregister(self, img_type: str, reg_files: list, target_dir: Path):
+        """
+        Coregister within-subject images
+        Parameters
+        ----------
+        img_type : str
+            Type of images to register
+        reg_files : list
+            List of files to register
+        target_dir : Path
+            Path to output directory
+        """
+        for reg_type, in_file, ref in zip(
+            ["pre2post", "post2pre"], reg_files, reg_files[::-1]
+        ):
+            out_file = target_dir / f"{img_type}_{reg_type}.nii.gz"
+            out_mat = target_dir / f"{img_type}_{reg_type}.mat"
+            flt = fsl_functions.linear_registration(
+                in_file, ref, out_file, out_mat, coregister=True
+            )
+            print(flt.cmdline)
+            flt.run()
+
+    def longitudinal_registrations(self):
+        registrations_dir = self.output_dict.get("registrations").get(
+            "directory"
+        )
+        reg_dir = self.init_longitudinal_registrations(registrations_dir)
+        for reg_type, reg_files in reg_dir.items():
+            self.coregister(reg_type, reg_files, registrations_dir)
+
+    def run_registrations(self):
+        """
+        Register DWI (and its derived metrics to MNI space)
+        """
+        registrations_dir = self.output_dir / "registrations"
+        if not registrations_dir.exists():
+            message = messages.OUTPUT_NOT_EXIST.format(
+                output_dir=registrations_dir
+            )
+            message = colored(message, "yellow")
+            warnings.warn(message)
+            registrations_dir.mkdir()
+        registrations_dict = {"directory": registrations_dir}
+        self.output_dict["registrations"] = registrations_dict
+        if self.longitudinal:
+            self.longitudinal_registrations()

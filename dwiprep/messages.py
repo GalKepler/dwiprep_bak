@@ -7,7 +7,9 @@ OUTPUT_NOT_EXIST = (
     "Output directory doesn't exist. Initiating at {output_dir}."
 )
 BAD_VALUE_TYPES = "Invalid value type(s): {value_types}. Values must be uniform and either lists or PathLike objects."
-
+MORE_THAN_TWO_SESSIONS = (
+    "Registration of more than 2 sessions is not implemented yet."
+)
 ### Warning ###
 
 JSON_NOT_FOUND = "Couldn't find corresponding json file for {fname} NIfTI. Please make sure that a corresponding json file exists at under the same directory: ({dname})."
@@ -19,6 +21,11 @@ Proceeding with FSL's "fast" command, which is sub-optimal."""
 ### Messages ###
 
 CONVERT_TO_MIF = """Converting file to MRTrix3's .mif format for better compatability with used functions...
+Input file: {in_file}
+Output file: {out_file}
+Command: {command}
+"""
+CONVERT_TO_NII = """Converting file to NIfTI (.nii.gz) format for compatability with used functions...
 Input file: {in_file}
 Output file: {out_file}
 Command: {command}
