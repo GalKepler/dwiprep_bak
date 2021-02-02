@@ -141,3 +141,4 @@ cython_debug/
 
 # Trials files
 for_trials.py
+trials.ipynb

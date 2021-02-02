@@ -38,13 +38,13 @@ class RegistrationsPipeline:
         sessions = []
         for session, session_dict in preprocess_dict.items():
             sessions.append(session)
-            preprocessed_dwi = session_dict.get("preprocessed")
+            preprocessed = session_dict.get("preprocessed")
             anatomical = session_dict.get("anatomical_mif")
             tensors = session_dict.get("tensors")
             registration_dict[session] = {
                 "initial": {
                     "anatomical": anatomical,
-                    "dwi": preprocessed_dwi,
+                    "dwi": preprocessed,
                     "tensors": tensors,
                 }
             }
@@ -58,6 +58,8 @@ class RegistrationsPipeline:
         in_files : list
             List of files to convert
         """
+        target_dir = target_dir / "anatomical"
+        target_dir.mkdir(exist_ok=True)
         out_files = []
         for in_file, session in zip(in_files, self.sessions):
             out_fname = f"{in_file.name.split('.')[0]}_{session}.nii.gz"
@@ -85,6 +87,8 @@ class RegistrationsPipeline:
         """
         Average preprocessed B0 volumes
         """
+        target_dir = target_dir / "mean_b0"
+        target_dir.mkdir(exist_ok=True)
         for session in self.sessions:
             in_file = (
                 self.registrations_dict.get(session).get("initial").get("dwi")
@@ -125,6 +129,8 @@ class RegistrationsPipeline:
             self.registrations_dict.get(session).get(img_type)
             for session in self.sessions
         ]
+        target_dir = target_dir / img_type
+        target_dir.mkdir(exist_ok=True)
         registered_files, cmds = fsl_functions.register_between_sessions(
             pre, post, img_type, target_dir
         )
@@ -173,6 +179,8 @@ class RegistrationsPipeline:
         target_dir : Path
             Path to output directory
         """
+        target_dir = target_dir / img_type
+        target_dir.mkdir(exist_ok=True)
         in_files = [
             self.registrations_dict.get(session).get(f"coreg_{img_type}")
             for session in self.sessions
@@ -196,7 +204,7 @@ class RegistrationsPipeline:
             os.system(cmd)
         self.registrations_dict[img_type] = out_file
 
-    def register_tensors_dwi(
+    def register_tensors(
         self,
         ref: Path,
         keep_tmps: bool = False,
@@ -205,9 +213,13 @@ class RegistrationsPipeline:
         Apply calculated transformation matrices to tensors-derived parameters images
         """
         for session in self.sessions:
-            aff = self.registrations_dict.get(session).get(
-                "coreg_affine_mean_b0"
-            )
+            coreg_tensors = {}
+            if self.longitudinal:
+                aff = self.registrations_dict.get(session).get("epi2t1w")
+            else:
+                aff = self.registrations_dict.get("epi2anatomical").get(
+                    "affine"
+                )
             tensors = (
                 self.registrations_dict.get(session)
                 .get("initial")
@@ -237,11 +249,178 @@ class RegistrationsPipeline:
                     Path(executer.inputs.out_matrix_file).unlink()
                     if not keep_tmps:
                         tmp.unlink()
-            # dwi = (
-            #     self.register_tensors_dwi.get(session)
-            #     .get("initial")
-            #     .get("dwi")
-            # )
+                coreg_tensors[key] = flag
+            self.registrations_dict[session]["coreg_tensors"] = coreg_tensors
+
+    def skull_strip(self, in_file: Path):
+        """
+        Use FSL's BET to remove skull
+        Parameters
+        ----------
+        in_file : Path
+            Path to whole-head image
+        """
+        out_file = (
+            in_file.parent / f"{in_file.name.split('.')[0]}_brain.nii.gz"
+        )
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            bet = fsl_functions.skull_strip(in_file, out_file)
+            message = messages.SKULL_STRIP.format(
+                in_file=in_file, out_file=out_file, command=bet.cmdline
+            )
+            message = colored(message, "green")
+            print(message)
+            bet.run()
+        return out_file
+
+    def register_epi_to_anatomical(self, target_dir: Path):
+        """
+        Apply coregistration using a wrapper for FSL's epi_reg script
+        Parameters
+        ----------
+        target_dir : Path
+            Path to output directory
+        """
+        in_file, ref = [
+            self.registrations_dict.get(img_type)
+            for img_type in ["mean_b0", "anatomical"]
+        ]
+        ref_brain = self.skull_strip(ref)
+        out_prefix = target_dir / "epi2anatomical"
+        out_file = out_prefix.with_suffix(".nii.gz")
+        out_mat = out_prefix.with_suffix(".mat")
+        if out_mat.exists():
+            message = messages.FILE_EXISTS.format(fname=out_mat)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            cmd = fsl_functions.epi_reg(in_file, ref, ref_brain, out_prefix)
+            message = messages.EPI_REG.format(
+                epi=in_file,
+                anat=ref,
+                anat_brain=ref_brain,
+                out_file=out_file,
+                out_mat=out_mat,
+                command=cmd,
+            )
+            message = colored(message, "green")
+            print(message)
+            os.system(cmd)
+        self.registrations_dict["epi2anatomical"] = {
+            "image": out_file,
+            "affine": out_mat,
+        }
+
+    def combine_between_session_affines(self, target_dir: Path):
+        """
+        Combine the within-subjects and between-modalities affines
+        """
+        epi2t1w = self.registrations_dict.get("epi2anatomical").get("affine")
+        for session in self.sessions:
+            between_sessions = self.registrations_dict.get(session).get(
+                "coreg_affine_mean_b0"
+            )
+            out_file = target_dir / f"{session}_epi2anatomical.mat"
+            if out_file.exists():
+                message = messages.FILE_EXISTS.format(fname=out_file)
+                message = colored(message, "yellow")
+                warnings.warn(message)
+            else:
+                cmd = fsl_functions.concat_affines(
+                    between_sessions, epi2t1w, out_file
+                )
+                message = messages.CONCAT_AFFINES.format(
+                    between_sessions=between_sessions,
+                    epi2t1w=epi2t1w,
+                    out_file=out_file,
+                    command=cmd,
+                )
+                message = colored(message, "green")
+                print(message)
+                os.system(cmd)
+            self.registrations_dict[session]["epi2t1w"] = out_file
+
+    def preprocess_anat(self, target_dir: Path):
+        """
+        Wrapper for fsl_anat function for anatomical preprocessing
+        Parameters
+        ----------
+        target_dir : Path
+            Path to output preprocessing directory
+        """
+        anat_file = self.registrations_dict.get("anatomical")
+        out_dir = target_dir / "preprocessed"
+        if out_dir.with_suffix(".anat").exists():
+            message = messages.FILE_EXISTS.format(
+                fname=out_dir.with_suffix(".anat")
+            )
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            cmd = fsl_functions.preprocess_anatomical(anat_file, out_dir)
+            message = messages.PREPROCESS_ANAT.format(
+                in_file=anat_file,
+                out_dir=out_dir.with_suffix(".anat"),
+                command=cmd,
+            )
+            message = colored(message, "green")
+            print(message)
+            os.system(cmd)
+        self.registrations_dict["preprocessed_t1w"] = out_dir.with_suffix(
+            ".anat"
+        )
+
+    def normalize_tensors(self):
+        warp = (
+            self.registrations_dict.get("preprocessed_t1w")
+            / "T1_to_MNI_nonlin_coeff.nii.gz"
+        )
+        ref = (
+            Path(os.getenv("FSLDIR"))
+            / "data"
+            / "standard"
+            / "MNI152_T1_2mm.nii.gz"
+        )
+        for session in self.sessions:
+            norm_tensors = {}
+            tensors = self.registrations_dict.get(session).get("coreg_tensors")
+            tensors_dir = tensors.get("tensor").parents[1] / "normalized"
+            tensors_dir.mkdir(exist_ok=True)
+            for key, val in tensors.items():
+                out_file = tensors_dir / val.name
+                if out_file.exists():
+                    message = messages.FILE_EXISTS.format(fname=out_file)
+                    message = colored(message, "yellow")
+                    warnings.warn(message)
+                else:
+                    executer = fsl_functions.apply_warp(
+                        val, ref, warp, out_file
+                    )
+                    message = messages.APPLY_WARP.format(
+                        in_file=val,
+                        warp=warp,
+                        ref=ref,
+                        out_file=out_file,
+                        command=executer.cmdline,
+                    )
+                    message = colored(message, "green")
+                    print(message)
+                    executer.run()
+                norm_tensors[key] = out_file
+            self.registrations_dict[session][
+                "normalized_tensors"
+            ] = norm_tensors
+
+    def rearrange_non_longitudinal_inputs(self):
+        for img_type in ["mean_b0", "anatomical"]:
+            for session in self.sessions:
+                self.registrations_dict[
+                    img_type
+                ] = self.registrations_dict.get(session).get(img_type)
 
     def register_sessions(self, target_dir: Path):
         """
@@ -255,34 +434,6 @@ class RegistrationsPipeline:
             self.average_coregistered(img_type, target_dir)
             for img_type in ["mean_b0", "anatomical"]
         ]
-        self.register_tensors_dwi(self.registrations_dict.get("mean_b0"))
-
-    def register_epi_to_anatomical(self):
-        in_file, ref = [
-            self.registrations_dict.get(img_type)
-            for img_type in ["mean_b0", "anatomical"]
-        ]
-        print(in_file)
-        print(ref)
-
-    def skull_strip(self, in_file: Path):
-        """
-        Use FSL's BET to remove skull
-        Parameters
-        ----------
-        in_file : Path
-            Path to whole-head image
-        """
-
-    # def preprocess_anat(self):
-    #     anat_file = self.registrations_dict.get("anatomical")
-
-    def rearrange_non_longitudinal_inputs(self):
-        for img_type in ["mean_b0", "anatomical"]:
-            for session in self.sessions:
-                self.registrations_dict[
-                    img_type
-                ] = self.registrations_dict.get(session).get(img_type)
 
     def run(self):
         target_dir = self.registrations_dict.get("directory")
@@ -296,6 +447,14 @@ class RegistrationsPipeline:
         self.average_b0(target_dir)
         if self.longitudinal:
             self.register_sessions(target_dir)
-            self.register_epi_to_anatomical()
+            self.register_epi_to_anatomical(target_dir)
+            self.combine_between_session_affines(target_dir)
+            self.register_tensors(self.registrations_dict.get("anatomical"))
+            self.preprocess_anat(target_dir)
+            self.normalize_tensors()
         else:
             self.rearrange_non_longitudinal_inputs()
+            self.register_epi_to_anatomical(target_dir)
+            self.register_tensors(self.registrations_dict.get("anatomical"))
+            self.preprocess_anat(target_dir)
+            self.normalize_tensors()

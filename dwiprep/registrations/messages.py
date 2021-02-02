@@ -48,5 +48,50 @@ Output:
     {out_file}
 Command:
     {command}
-
+"""
+SKULL_STRIP = """Performing skull stripping using FSL's BET function.
+Input:
+    {in_file}
+Output:
+    {out_file}
+Command:
+    {command}
+"""
+EPI_REG = """Performing registration between low-res EPI image and high-res anatomical one.
+Inputs:
+    1. EPI image: {epi}
+    2. Whole-brain anatomical image: {anat}
+    3. Skull-stripped anatomical image: {anat_brain}
+Outputs:
+    1. Registered image: {out_file}
+    2. Transformation matrix: {out_mat}
+Command:
+    {command}
+"""
+CONCAT_AFFINES = """Combining pre-calculated affine matrices into one across-modalities,across-session affine matrix.
+Inputs:
+    1. Across-sessions affine matrix: {between_sessions}
+    2. Across-modalities affine matrix: {epi2t1w}
+Output:
+    Combined affine matrix: {out_file}
+Command:
+    {command}
+"""
+PREPROCESS_ANAT = """Preprocessing anatomical image for optimal estimation of normalization's warp fields.
+Input:
+    Raw anatomical image: {in_file}
+Output:
+    Preprocessing directory: {out_dir}
+Command:
+    {command}
+"""
+APPLY_WARP = """Applying pre-calculated warp field to normalize tensor-derived metrices.
+Inputs:
+    1. Tensor-derived parameter image: {in_file}
+    2. Pre-calculated warp field: {warp}
+    3. Reference image: {ref}
+Output:
+    Normalized tensor-derived parameter image: {out_file}
+Command:
+    {command}
 """

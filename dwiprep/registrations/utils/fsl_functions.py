@@ -153,3 +153,91 @@ def linear_registration(
         flt.inputs.cost = "mutualinfo"
     flt.inputs.out_matrix_file = out_mat
     return flt
+
+
+def skull_strip(in_file: Path, out_file: Path):
+    """
+    Use FSL's BET for skull removal
+    Parameters
+    ----------
+    in_file : Path
+        Path to whole-head image
+    out_file : Path
+        Path to output brain image
+    """
+    bet = fsl.BET()
+    bet.inputs.in_file = in_file
+    bet.inputs.out_file = out_file
+    bet.inputs.robust = True
+    return bet
+
+
+def epi_reg(epi: Path, anat: Path, anat_brain: Path, out_prefix: Path):
+    """
+    Apply coregistration using a wrapper for FSL's epi_reg script
+    Parameters
+    ----------
+    epi : Path
+        Path to EPI (DWI) image
+    anat : Path
+        Path to whole-head anatomical image
+    anat_brain : Path
+        Path to skull-stipped anatomical image
+    out_prefix : Path
+        Path to output coregistered image
+    """
+    cmd = f"epi_reg --epi={epi} --t1={anat} --t1brain={anat_brain} --out={out_prefix}"
+
+    return cmd
+
+
+def concat_affines(affine_1: Path, affine_2: Path, out_file: Path):
+    """
+    Concatenate multiple affine transformations into one
+    Parameters
+    ----------
+    affine_1 : Path
+        Path to first affine matrix
+    affine_2 : Path
+        Path to second affine matrix
+    out_file : Path
+        Path to output combined matrix
+    """
+    cmd = f"convert_xfm -omat {out_file} -concat {affine_2} {affine_1}"
+    return cmd
+
+
+def preprocess_anatomical(in_file: Path, out_dir: Path):
+    """
+    Wrapper for fsl_anat function for anatomical preprocessing
+    Parameters
+    ----------
+    in_file : Path
+        Path to raw T1 image
+    out_dir : Path
+        Path to output preprocessing directory
+    """
+    cmd = f"fsl_anat -i {in_file} -o {out_dir}"
+    return cmd
+
+
+def apply_warp(in_file: Path, ref: Path, warp: Path, out_file: Path):
+    """
+    Apply pre-calculated warp field coefficients to normalize an image
+    Parameters
+    ----------
+    in_file : Path
+        Path to image to be normalized
+    ref : Path
+        Path to reference image
+    warp : Path
+        Path to pre-calculated warp field
+    out_file : Path
+        Path to output warped image
+    """
+    aw = fsl.ApplyWarp()
+    aw.inputs.in_file = in_file
+    aw.inputs.ref_file = ref
+    aw.inputs.field_file = warp
+    aw.inputs.out_file = out_file
+    return aw
