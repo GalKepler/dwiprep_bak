@@ -1,4 +1,4 @@
-from dwiprep import messages
+from dwiprep.preprocessing import messages
 from pathlib import Path
 
 

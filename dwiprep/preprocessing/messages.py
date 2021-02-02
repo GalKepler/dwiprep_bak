@@ -62,7 +62,7 @@ Input file: {in_file}
 Output files: 
     1. Tensor image: {tensor}
     Command: {command_1}
-    2. Mead Diffusivity image: {md}
+    2. Mean Diffusivity image: {md}
     3. Fractional Anisotropy image: {fa}
     4. Axial Diffusivity image: {ad}
     5. Radial Diffusivity image: {rd}
