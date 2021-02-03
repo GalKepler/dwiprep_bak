@@ -415,6 +415,15 @@ class RegistrationsPipeline:
                 "normalized_tensors"
             ] = norm_tensors
 
+    def register_dwi(self):
+        for session in self.sessions:
+            dwi = (
+                self.registrations_dict.get(session).get("initial").get("dwi")
+            )
+            dwi_dir = dwi.parent / "DWI" / "native"
+            dwi_dir.mkdir(parent=True, exist_ok=True)
+        ##### STOPPED HERE ####
+
     def rearrange_non_longitudinal_inputs(self):
         for img_type in ["mean_b0", "anatomical"]:
             for session in self.sessions:

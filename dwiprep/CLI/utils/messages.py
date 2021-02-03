@@ -1,0 +1,1 @@
+DESCRIPTION = """DWIprep is a robust and easy-to-use preprocessing pipeline for diffusion-weighted imaging of various acquisitions."""

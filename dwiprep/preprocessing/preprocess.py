@@ -60,7 +60,7 @@ class PreprocessPipeline:
                     output_dir=output_dir
                 )
                 warnings.warn(message)
-                session_derivatives.mkdir()
+                session_derivatives.mkdir(parents=True)
 
     def infer_longitudinal(self):
         """
@@ -381,7 +381,10 @@ class PreprocessPipeline:
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
             self.average_b0(
-                session, session_dict.get("ap_mif"), "mif", target_dir
+                session,
+                self.output_dict.get(session).get("ap_mif"),
+                "mif",
+                target_dir,
             )
             self.merge_phase_opposites(session, session_dict, target_dir)
             self.correct_sdc(session, target_dir)
