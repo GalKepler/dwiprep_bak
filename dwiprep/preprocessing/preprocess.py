@@ -1,14 +1,13 @@
-import warnings
 import os
-from dwiprep.preprocessing import messages
-from dwiprep.preprocessing.utils.fetch_files import fetch_additional_files
-from dwiprep.preprocessing.utils import (
-    conversions,
-    mrtrix_functions,
-)
-from dwiprep.registrations.registrations import RegistrationsPipeline
+import warnings
 from pathlib import Path
+
 from termcolor import colored
+
+from dwiprep.preprocessing import messages
+from dwiprep.preprocessing.utils import conversions, mrtrix_functions
+from dwiprep.preprocessing.utils.fetch_files import fetch_additional_files
+from dwiprep.registrations.registrations import RegistrationsPipeline
 
 
 class PreprocessPipeline:
