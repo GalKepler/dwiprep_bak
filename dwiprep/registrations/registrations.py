@@ -2,12 +2,11 @@ import os
 import warnings
 from pathlib import Path
 
-from termcolor import colored
-
 from dwiprep.preprocessing import messages as preproc_messages
 from dwiprep.preprocessing.utils import conversions, mrtrix_functions
 from dwiprep.registrations import messages
 from dwiprep.registrations.utils import fsl_functions
+from termcolor import colored
 
 
 class RegistrationsPipeline:
@@ -54,7 +53,9 @@ class RegistrationsPipeline:
 
     def convert_to_nii(self, in_files: list, target_dir: Path):
         """
-        Convert MRTrix's .mif format to NIfTI for compatability with FSL's funcitons
+        Convert MRTrix's .mif format to NIfTI for compatability with FSL's
+        functions.
+
         Parameters
         ----------
         in_files : list
@@ -87,7 +88,7 @@ class RegistrationsPipeline:
 
     def average_b0(self, target_dir: Path):
         """
-        Average preprocessed B0 volumes
+        Average preprocessed B0 volumes.
         """
         target_dir = target_dir / "mean_b0"
         target_dir.mkdir(exist_ok=True)
@@ -212,7 +213,8 @@ class RegistrationsPipeline:
         keep_tmps: bool = False,
     ):
         """
-        Apply calculated transformation matrices to tensors-derived parameters images
+        Apply calculated transformation matrices to tensors-derived parameters
+        images.
         """
         for session in self.sessions:
             coreg_tensors = {}
@@ -319,7 +321,7 @@ class RegistrationsPipeline:
 
     def combine_between_session_affines(self, target_dir: Path):
         """
-        Combine the within-subjects and between-modalities affines
+        Combine the within-subjects and between-modalities affines.
         """
         epi2t1w = self.registrations_dict.get("epi2anatomical").get("affine")
         for session in self.sessions:
@@ -348,7 +350,8 @@ class RegistrationsPipeline:
 
     def preprocess_anat(self, target_dir: Path):
         """
-        Wrapper for fsl_anat function for anatomical preprocessing
+        Wrapper for fsl_anat function for anatomical preprocessing.
+
         Parameters
         ----------
         target_dir : Path
@@ -424,7 +427,7 @@ class RegistrationsPipeline:
             )
             dwi_dir = dwi.parent / "DWI" / "native"
             dwi_dir.mkdir(parent=True, exist_ok=True)
-        ##### STOPPED HERE ####
+        # STOPPED HERE
 
     def rearrange_non_longitudinal_inputs(self):
         for img_type in ["mean_b0", "anatomical"]:
@@ -435,7 +438,12 @@ class RegistrationsPipeline:
 
     def register_sessions(self, target_dir: Path):
         """
-        Co-register within-subject images
+        Co-register within-subject images.
+
+        Parameters
+        ----------
+        target_dir : Path
+            Output directory path
         """
         [
             self.coregister(img_type, target_dir)
