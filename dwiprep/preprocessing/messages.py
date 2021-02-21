@@ -7,7 +7,7 @@ BAD_INPUT = "Invalid key: {key}. Keys must be one of {keys}"
 OUTPUT_NOT_EXIST = (
     "Output directory doesn't exist. Initiating at {output_dir}."
 )
-BAD_VALUE_TYPES = "Invalid value type(s): {value_types}. Values must be uniform and either lists or PathLike objects."  # noqa: E501
+BAD_VALUE_TYPES = "Invalid value type(s): {value_types}. Values must be uniform and either lists or PathLike objects."
 MORE_THAN_TWO_SESSIONS = (
     "Registration of more than 2 sessions is not implemented yet."
 )
