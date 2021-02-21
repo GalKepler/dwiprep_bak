@@ -1,11 +1,13 @@
 import os
 import warnings
 from pathlib import Path
-from dwiprep.preprocessing.utils import conversions, mrtrix_functions
-from dwiprep.preprocessing import messages as preproc_messages
-from dwiprep.registrations.utils import fsl_functions
-from dwiprep.registrations import messages
+
 from termcolor import colored
+
+from dwiprep.preprocessing import messages as preproc_messages
+from dwiprep.preprocessing.utils import conversions, mrtrix_functions
+from dwiprep.registrations import messages
+from dwiprep.registrations.utils import fsl_functions
 
 
 class RegistrationsPipeline:

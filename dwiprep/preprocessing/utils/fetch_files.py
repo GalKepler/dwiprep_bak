@@ -1,5 +1,6 @@
-from dwiprep.preprocessing import messages
 from pathlib import Path
+
+from dwiprep.preprocessing import messages
 
 
 def fetch_additional_files(nii: Path, parameter: str):

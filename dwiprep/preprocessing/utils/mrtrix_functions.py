@@ -1,6 +1,7 @@
 import subprocess
-from nipype.interfaces import mrtrix3 as mrt
 from pathlib import Path
+
+from nipype.interfaces import mrtrix3 as mrt
 
 
 def extract_b0(in_file: Path, out_b0s: Path, out_file: Path):
