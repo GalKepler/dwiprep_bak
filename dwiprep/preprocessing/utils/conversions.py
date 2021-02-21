@@ -1,5 +1,6 @@
-from nipype.interfaces.mrtrix3 import MRConvert
 from pathlib import Path
+
+from nipype.interfaces.mrtrix3 import MRConvert
 
 
 def mrtrix_conversion(inputs: dict, output: Path):
