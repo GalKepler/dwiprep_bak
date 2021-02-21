@@ -1,13 +1,11 @@
-import warnings
 import os
-from dwiprep.preprocessing import messages
-from dwiprep.preprocessing.utils.fetch_files import fetch_additional_files
-from dwiprep.preprocessing.utils import (
-    conversions,
-    mrtrix_functions,
-)
-from dwiprep.registrations.registrations import RegistrationsPipeline
+import warnings
 from pathlib import Path
+
+from dwiprep.preprocessing import messages
+from dwiprep.preprocessing.utils import conversions, mrtrix_functions
+from dwiprep.preprocessing.utils.fetch_files import fetch_additional_files
+from dwiprep.registrations.registrations import RegistrationsPipeline
 from termcolor import colored
 
 
@@ -27,11 +25,14 @@ class PreprocessPipeline:
 
     def validate_input(self, input_dict: dict):
         """
-        Validates that the keys passed to the class correspond with the ones expected.
+        Validates that the keys passed to the class correspond with the ones
+        expected.
+
         Raises
         ------
         ValueError
-            [Informs the user about the mismatch between given key and expected keys]
+            Informs the user about the mismatch between given key and
+            expected keys
         """
         for key in input_dict:
             if key.lower() not in self.INPUT_KEYS:
@@ -43,12 +44,13 @@ class PreprocessPipeline:
 
     def validate_output(self, output_dir: Path):
         """
-        Checks whether the output directory for subject's preprocessing derivatives exists.
-        Initiates it otherwise.
+        Checks whether the output directory for subject's preprocessing
+        derivatives exists, otherwise, initiates it.
+
         Parameters
         ----------
         output_dir : Path
-            [Path to output directory]
+            Path to output directory
         """
         self.output_dict = {}
         for session in self.input_dict:
@@ -64,12 +66,15 @@ class PreprocessPipeline:
 
     def infer_longitudinal(self):
         """
-        Defines whether the preprocessing pipeline will include between-sessions registrations (i.e longitudinal preprocessing)
+        Defines whether the preprocessing pipeline will include
+        between-sessions registrations (i.e longitudinal preprocessing).
+
         Raises
         ------
         ValueError
-            [Informs the user about various types of values in given input_dict.
-            All values must be either lists (longitudinal) or PathLike objects (single)]
+            Informs the user about various types of values in given
+            input_dict. All values must be either lists (longitudinal) or
+            PathLike objects (single)
         """
         value_type = set([type(value) for value in self.input_dict.values()])
         if len(value_type) > 1:
@@ -83,7 +88,8 @@ class PreprocessPipeline:
 
     def rearrange_inputs(self):
         """
-        Rearanges inputs dictionary to match corresponding sessions for ease of use
+        Rearanges inputs dictionary to match corresponding sessions for ease
+        of use.
         """
         num_sessions = len(self.input_dict.get("ap"))
         updated_dict = {}
@@ -97,7 +103,8 @@ class PreprocessPipeline:
 
     def expand_input_dict(self):
         """
-        updates additional .json/.bvec/.bval files corresponding to given input NIfTI files
+        updates additional .json/.bvec/.bval files corresponding to given
+        input NIfTI files.
         """
         expended_dict = self.input_dict.copy()
         for session, session_dict in self.input_dict.items():
@@ -122,15 +129,17 @@ class PreprocessPipeline:
         target_dir: Path,
     ):
         """
-        Convert NIfTI files to .mif format for compatability with MRTrix3's commands.
+        Convert NIfTI files to .mif format for compatability with MRTrix3's
+        commands.
+
         Parameters
         ----------
         session : str
-            [key representing a session within the dataset.]
+            key representing a session within the dataset
         session_dict : dict
-            [Dictionary containing paths to session-relevant files.]
+            Dictionary containing paths to session-relevant files
         target_dir : Path
-            [Path to user-defined session's output directory.]
+            Path to user-defined session's output directory
         """
         for modality, vals in session_dict.items():
             target_file = target_dir / f"{modality}.mif"
@@ -160,13 +169,14 @@ class PreprocessPipeline:
         corrected: bool = False,
     ):
         """
-        Calculate DWI series' mean B0 image for later registrations
+        Calculate DWI series' mean B0 image for later registrations.
+
         Parameters
         ----------
         session : str
-            [key representing a session within the dataset.]
+            key representing a session within the dataset
         target_dir : Path
-            [Path to user-defined session's output directory.]
+            Path to user-defined session's output directory
         """
         # in_file = self.output_dict.get(session).get("ap_mif")
         out_b0s = target_dir / f"b0s.{out_suffix}"
@@ -195,15 +205,17 @@ class PreprocessPipeline:
         self, session: str, session_dict: dict, target_dir: Path
     ):
         """
-        Merge phase opposites (AP-PA) images across the 4th dimension for compatibillity with dwifslpreproc function
+        Merge phase opposites (AP-PA) images across the 4th dimension for
+        compatibillity with dwifslpreproc function.
+
         Parameters
         ----------
         session : str
-            [key representing a session within the dataset.]
+            key representing a session within the dataset
         session_dict : dict
-            [Dictionary containing paths to session-relevant files.]
+            Dictionary containing paths to session-relevant files
         target_dir : Path
-            Path to user-defined session's output directory.
+            Path to user-defined session's output directory
         """
         ap, pa = [
             self.output_dict.get(session).get(key)
@@ -226,13 +238,15 @@ class PreprocessPipeline:
 
     def correct_sdc(self, session: str, target_dir: Path):
         """
-        Use MRTrix3's dwifslpreproc function to perform susceptabillity distortion correction on DWI series
+        Use MRTrix3's dwifslpreproc function to perform susceptabillity
+        distortion correction on DWI series.
+
         Parameters
         ----------
         session : str
-            key representing a session within the dataset.
+            key representing a session within the dataset
         target_dir : Path
-            Path to user-defined session's output directory.
+            Path to user-defined session's output directory
         """
         in_file, merged_phasediff = [
             self.output_dict.get(session).get(key)
@@ -260,13 +274,14 @@ class PreprocessPipeline:
 
     def correct_bias_field(self, session: str, target_dir: Path):
         """
-        Perform DWI B1 field inhomogenity correction
+        Perform DWI B1 field inhomogenity correction.
+
         Parameters
         ----------
         session : str
-            key representing a session within the dataset.
+            key representing a session within the dataset
         target_dir : Path
-            Path to user-defined session's output directory.
+            Path to user-defined session's output directory
         """
         in_file = self.output_dict.get(session).get("sdc_corrected")
         out_file = target_dir / "bias_corrected.mif"
@@ -297,13 +312,14 @@ class PreprocessPipeline:
 
     def calculate_metrics(self, session: Path, target_dir: Path):
         """
-        Calculate various metrics of DWI series (MD, FA, etc.)
+        Calculate various metrics of DWI series (MD, FA, etc.).
+
         Parameters
         ----------
         session : str
-            key representing a session within the dataset.
+            key representing a session within the dataset
         target_dir : Path
-            Path to user-defined session's output directory.
+            Path to user-defined session's output directory
         """
         in_file = self.output_dict.get(session).get("preprocessed")
         tensor_dir = target_dir / "tensors_parameters" / "native"
@@ -393,7 +409,7 @@ class PreprocessPipeline:
 
     def run_registrations(self):
         """
-        Register DWI (and its derived metrics to MNI space)
+        Register DWI (and its derived metrics to MNI space).
         """
         registrations_dir = self.output_dir / "registrations"
         if not registrations_dir.exists():
