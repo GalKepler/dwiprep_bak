@@ -223,7 +223,9 @@ def preprocess_anatomical(in_file: Path, out_dir: Path):
     return cmd
 
 
-def apply_warp(in_file: Path, ref: Path, warp: Path, out_file: Path):
+def apply_warp(
+    in_file: Path, ref: Path, warp: Path, out_file: Path, interp: str = None
+):
     """
     Apply pre-calculated warp field coefficients to normalize an image
     Parameters
@@ -242,4 +244,6 @@ def apply_warp(in_file: Path, ref: Path, warp: Path, out_file: Path):
     aw.inputs.ref_file = ref
     aw.inputs.field_file = warp
     aw.inputs.out_file = out_file
+    if interp:
+        aw.inputs.interp = interp
     return aw

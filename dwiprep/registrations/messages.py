@@ -95,3 +95,14 @@ Output:
 Command:
     {command}
 """
+REGISTER_ATLAS = """Applying pre-calculated warp field to register parcellation atlas from standard (MNI) to native space.
+Inputs:
+    1. Original parcellation atlas (at standard space): {atlas}
+    2. Pre-calculated warp field: {warp}
+    3. Reference image: {target}
+    4. Interpolation method: Nearest Neighbour
+Output:
+    Native-space brain parcellation: {out_file}
+Command:
+    {command}
+"""

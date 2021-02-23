@@ -407,7 +407,7 @@ class PreprocessPipeline:
             self.correct_bias_field(session, target_dir)
             self.calculate_metrics(session, target_dir)
 
-    def run_registrations(self):
+    def run_registrations(self, atlas: dict = None):
         """
         Register DWI (and its derived metrics to MNI space).
         """
@@ -420,6 +420,6 @@ class PreprocessPipeline:
             warnings.warn(message)
             registrations_dir.mkdir()
         self.registrations = RegistrationsPipeline(
-            self.output_dict, registrations_dir, self.longitudinal
+            self.output_dict, registrations_dir, self.longitudinal, atlas
         )
         self.registrations.run()

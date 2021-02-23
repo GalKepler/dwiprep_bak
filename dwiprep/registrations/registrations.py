@@ -11,12 +11,17 @@ from termcolor import colored
 
 class RegistrationsPipeline:
     def __init__(
-        self, preprocess_dict: dict, target_dir: Path, longitudinal: bool
+        self,
+        preprocess_dict: dict,
+        target_dir: Path,
+        longitudinal: bool,
+        atlas: dict = None,
     ):
         self.registrations_dict, self.sessions = self.initiate_registrations(
             preprocess_dict, target_dir
         )
         self.longitudinal = longitudinal
+        self.atlas = atlas
         self.infer_longitudinal()
 
     def infer_longitudinal(self):
@@ -380,9 +385,12 @@ class RegistrationsPipeline:
         )
 
     def normalize_tensors(self):
+        """
+        Apply pre-calculated transforms to tensor-derived parameters to normalize them into standard space.
+        """
         warp = (
             self.registrations_dict.get("preprocessed_t1w")
-            / "T1_to_MNI_nonlin_coeff.nii.gz"
+            / "T1_to_MNI_nonlin_field.nii.gz"
         )
         ref = (
             Path(os.getenv("FSLDIR"))
@@ -420,14 +428,43 @@ class RegistrationsPipeline:
                 "normalized_tensors"
             ] = norm_tensors
 
-    def register_dwi(self):
-        for session in self.sessions:
-            dwi = (
-                self.registrations_dict.get(session).get("initial").get("dwi")
+    def register_parcellation(self):
+        """
+        Register parcellation from standard to subject's native space
+        """
+        warp = (
+            self.registrations_dict.get("preprocessed_t1w")
+            / "MNI_to_T1_nonlin_field.nii.gz"
+        )
+        target = (
+            self.registrations_dict.get("preprocessed_t1w")
+            / "T1_biascorr_brain.nii.gz"
+        )
+        source = Path(self.atlas.get("path"))
+        name = self.atlas.get("name")
+        if not name:
+            name = source.name.split(".")[0]
+        name += "_native.nii.gz"
+        out_file = self.registrations_dict.get("preprocessed_t1w") / name
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            executer = fsl_functions.apply_warp(
+                source, target, warp, out_file, "nn"
             )
-            dwi_dir = dwi.parent / "DWI" / "native"
-            dwi_dir.mkdir(parent=True, exist_ok=True)
-        # STOPPED HERE
+            message = messages.REGISTER_ATLAS.format(
+                atlas=source,
+                warp=warp,
+                target=target,
+                out_file=out_file,
+                command=executer.cmdline,
+            )
+            message = colored(message, "green")
+            print(message)
+            executer.run()
+        self.registrations_dict["native_atlas"] = out_file
 
     def rearrange_non_longitudinal_inputs(self):
         for img_type in ["mean_b0", "anatomical"]:
@@ -471,9 +508,13 @@ class RegistrationsPipeline:
             self.register_tensors(self.registrations_dict.get("anatomical"))
             self.preprocess_anat(target_dir)
             self.normalize_tensors()
+            if self.atlas:
+                self.register_parcellation()
         else:
             self.rearrange_non_longitudinal_inputs()
             self.register_epi_to_anatomical(target_dir)
             self.register_tensors(self.registrations_dict.get("anatomical"))
             self.preprocess_anat(target_dir)
             self.normalize_tensors()
+            if self.atlas:
+                self.register_parcellation()
