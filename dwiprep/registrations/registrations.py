@@ -1,11 +1,13 @@
 import os
 import warnings
+import shutil
+import gzip
 from pathlib import Path
 
 from dwiprep.preprocessing import messages as preproc_messages
 from dwiprep.preprocessing.utils import conversions, mrtrix_functions
 from dwiprep.registrations import messages
-from dwiprep.registrations.utils import fsl_functions
+from dwiprep.registrations.utils import fsl_functions, matlab_functions
 from termcolor import colored
 
 
@@ -16,6 +18,7 @@ class RegistrationsPipeline:
         target_dir: Path,
         longitudinal: bool,
         atlas: dict = None,
+        use_matlab: bool = False,
     ):
         self.registrations_dict, self.sessions = self.initiate_registrations(
             preprocess_dict, target_dir
@@ -23,6 +26,8 @@ class RegistrationsPipeline:
         self.longitudinal = longitudinal
         self.atlas = atlas
         self.infer_longitudinal()
+        if use_matlab:
+            self.use_matlab = matlab_functions.check_matlab()
 
     def infer_longitudinal(self):
         num_sessions = len(self.registrations_dict.keys()) - 1
@@ -384,7 +389,39 @@ class RegistrationsPipeline:
             ".anat"
         )
 
-    def normalize_tensors(self):
+    def cat_preproc_anat(self, target_dir: Path):
+        anat_file = self.registrations_dict.get("anatomical")
+        out_dir = target_dir / "preprocessed_anat"
+        nii_name = anat_file.name.split(".")[0] + ".nii"
+        anat_nii = out_dir / nii_name
+        if anat_nii.exists():
+            message = messages.FILE_EXISTS.format(fname=anat_nii)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            message = messages.GUNZIP.format(
+                anat_file=anat_file, anat_nii=anat_nii
+            )
+            message = colored(message, "green")
+            print(message)
+            out_dir.mkdir(exist_ok=True)
+            with gzip.open(anat_file, "rb") as f_in:
+                with open(anat_nii, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        if Path(out_dir / "label").exists():
+            message = messages.FILE_EXISTS.format(fname=out_dir)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            message = messages.PREPROCESS_CAT.format(
+                in_file=anat_nii, out_dir=out_dir
+            )
+            message = colored(message, "green")
+            print(message)
+            matlab_functions.run_default_cat(anat_nii)
+        self.registrations_dict["preprocessed_t1w"] = out_dir
+
+    def normalize_tensors_fsl(self):
         """
         Apply pre-calculated transforms to tensor-derived parameters to normalize them into standard space.
         """
@@ -428,7 +465,40 @@ class RegistrationsPipeline:
                 "normalized_tensors"
             ] = norm_tensors
 
-    def register_parcellation(self):
+    def normalize_tensors_cat(self):
+        """
+        Apply pre-calculated transforms to tensor-derived parameters to normalize them into standard space.
+        """
+        warp = [
+            f
+            for f in self.registrations_dict.get("preprocessed_t1w").glob(
+                "mri/y_mean_*.nii"
+            )
+        ][0]
+        for session in self.sessions:
+            norm_tensors = {}
+            tensors = self.registrations_dict.get(session).get("coreg_tensors")
+            tensors_dir = tensors.get("tensor").parents[1] / "normalized"
+            tensors_dir.mkdir(exist_ok=True)
+            for key, val in tensors.items():
+                out_file = tensors_dir / val.name
+                if out_file.exists():
+                    message = messages.FILE_EXISTS.format(fname=out_file)
+                    message = colored(message, "yellow")
+                    warnings.warn(message)
+                else:
+                    matlab_functions.apply_deformations(warp, val, 1, out_file)
+                    message = messages.REGISTER_TENSORS_CAT.format(
+                        in_file=val, warp=warp, out_file=out_file
+                    )
+                    message = colored(message, "green")
+                    print(message)
+                norm_tensors[key] = out_file
+            self.registrations_dict[session][
+                "normalized_tensors"
+            ] = norm_tensors
+
+    def register_parcellation_fsl(self):
         """
         Register parcellation from standard to subject's native space
         """
@@ -464,6 +534,37 @@ class RegistrationsPipeline:
             message = colored(message, "green")
             print(message)
             executer.run()
+        self.registrations_dict["native_atlas"] = out_file
+
+    def register_parcellation_cat(self):
+        """
+        Register parcellation from standard to subject's native space
+        """
+        warp = [
+            f
+            for f in self.registrations_dict.get("preprocessed_t1w").glob(
+                "mri/iy_mean_*.nii"
+            )
+        ][0]
+        source = Path(self.atlas.get("path"))
+        name = self.atlas.get("name")
+        if not name:
+            name = source.name.split(".")[0]
+        name += "_native.nii.gz"
+        out_file = self.registrations_dict.get("preprocessed_t1w") / name
+        if out_file.exists():
+            message = messages.FILE_EXISTS.format(fname=out_file)
+            message = colored(message, "yellow")
+            warnings.warn(message)
+        else:
+            matlab_functions.apply_deformations(warp, source, 0, out_file)
+            message = messages.REGISTER_ATLAS_CAT.format(
+                atlas=source,
+                warp=warp,
+                out_file=out_file,
+            )
+            message = colored(message, "green")
+            print(message)
         self.registrations_dict["native_atlas"] = out_file
 
     def rearrange_non_longitudinal_inputs(self):
@@ -506,15 +607,27 @@ class RegistrationsPipeline:
             self.register_epi_to_anatomical(target_dir)
             self.combine_between_session_affines(target_dir)
             self.register_tensors(self.registrations_dict.get("anatomical"))
-            self.preprocess_anat(target_dir)
-            self.normalize_tensors()
-            if self.atlas:
-                self.register_parcellation()
+            if self.use_matlab:
+                self.cat_preproc_anat(target_dir)
+                self.normalize_tensors_cat()
+                if self.atlas:
+                    self.register_parcellation_cat()
+            else:
+                self.preprocess_anat(target_dir)
+                self.normalize_tensors_fsl()
+                if self.atlas:
+                    self.register_parcellation_fsl()
         else:
             self.rearrange_non_longitudinal_inputs()
             self.register_epi_to_anatomical(target_dir)
             self.register_tensors(self.registrations_dict.get("anatomical"))
-            self.preprocess_anat(target_dir)
-            self.normalize_tensors()
-            if self.atlas:
-                self.register_parcellation()
+            if self.use_matlab:
+                self.cat_preproc_anat(target_dir)
+                self.normalize_tensors_cat()
+                if self.atlas:
+                    self.register_parcellation_cat()
+            else:
+                self.preprocess_anat(target_dir)
+                self.normalize_tensors_fsl()
+                if self.atlas:
+                    self.register_parcellation_fsl()

@@ -420,6 +420,10 @@ class PreprocessPipeline:
             warnings.warn(message)
             registrations_dir.mkdir()
         self.registrations = RegistrationsPipeline(
-            self.output_dict, registrations_dir, self.longitudinal, atlas
+            self.output_dict,
+            registrations_dir,
+            self.longitudinal,
+            atlas,
+            use_matlab=True,
         )
         self.registrations.run()

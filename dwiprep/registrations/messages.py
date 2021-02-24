@@ -106,3 +106,31 @@ Output:
 Command:
     {command}
 """
+REGISTER_ATLAS_CAT = """Applying pre-calculated warp field to register parcellation atlas from standard (MNI) to native space.
+Inputs:
+    1. Original parcellation atlas (at standard space): {atlas}
+    2. Pre-calculated warp field: {warp}
+    3. Interpolation method: Nearest Neighbour
+Output:
+    Native-space brain parcellation: {out_file}
+"""
+GUNZIP = """Unzipping .gz image for compatability with SPM functions...
+Input:
+    {anat_file}
+Output:
+    {anat_nii}
+"""
+PREPROCESS_CAT = """Preprocessing anatomical image for optimal estimation of normalization's warp fields.
+Input:
+    Raw anatomical image: {in_file}
+Output:
+    Preprocessing directory: {out_dir}
+For full description of the anatomical preprocessing pipeline and properties, see report under output directory.
+"""
+REGISTER_TENSORS_CAT = """Applying pre-calculated deformation field no normalize tensor-derived parameter image.
+Inputs:
+    1. Tensor-derived parameter image: {in_file}
+    2. Pre-calculated deformation field: {warp}
+Output:
+    Normalized tensor-derived parameter image: {out_file}
+"""
