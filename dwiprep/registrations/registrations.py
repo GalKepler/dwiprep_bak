@@ -408,10 +408,15 @@ class RegistrationsPipeline:
             with gzip.open(anat_file, "rb") as f_in:
                 with open(anat_nii, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-        if Path(out_dir / "label").exists():
-            message = messages.FILE_EXISTS.format(fname=out_dir)
-            message = colored(message, "yellow")
-            warnings.warn(message)
+
+        if Path(out_dir / "report").exists():
+            flag = [
+                f for f in Path(out_dir / "report").glob("catreport*.pdf")
+            ][0]
+            if flag:
+                message = messages.FILE_EXISTS.format(fname=flag)
+                message = colored(message, "yellow")
+                warnings.warn(message)
         else:
             message = messages.PREPROCESS_CAT.format(
                 in_file=anat_nii, out_dir=out_dir
