@@ -368,7 +368,7 @@ class RegistrationsPipeline:
             Path to output preprocessing directory
         """
         anat_file = self.registrations_dict.get("anatomical")
-        out_dir = target_dir / "preprocessed"
+        out_dir = target_dir / "preprocessed_FSL"
         if out_dir.with_suffix(".anat").exists():
             message = messages.FILE_EXISTS.format(
                 fname=out_dir.with_suffix(".anat")
@@ -391,7 +391,7 @@ class RegistrationsPipeline:
 
     def cat_preproc_anat(self, target_dir: Path):
         anat_file = self.registrations_dict.get("anatomical")
-        out_dir = target_dir / "preprocessed_anat"
+        out_dir = target_dir / "preprocessed_CAT"
         nii_name = anat_file.name.split(".")[0] + ".nii"
         anat_nii = out_dir / nii_name
         if anat_nii.exists():
@@ -443,7 +443,7 @@ class RegistrationsPipeline:
         for session in self.sessions:
             norm_tensors = {}
             tensors = self.registrations_dict.get(session).get("coreg_tensors")
-            tensors_dir = tensors.get("tensor").parents[1] / "normalized"
+            tensors_dir = tensors.get("tensor").parents[1] / "normalized_FSL"
             tensors_dir.mkdir(exist_ok=True)
             for key, val in tensors.items():
                 out_file = tensors_dir / val.name
@@ -483,7 +483,7 @@ class RegistrationsPipeline:
         for session in self.sessions:
             norm_tensors = {}
             tensors = self.registrations_dict.get(session).get("coreg_tensors")
-            tensors_dir = tensors.get("tensor").parents[1] / "normalized"
+            tensors_dir = tensors.get("tensor").parents[1] / "normalized_CAT"
             tensors_dir.mkdir(exist_ok=True)
             for key, val in tensors.items():
                 out_file = tensors_dir / val.name
