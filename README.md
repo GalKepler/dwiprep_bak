@@ -20,11 +20,9 @@ ____
 2. **Motion & Susceptability Distortions Correction (SDC)** using FSL's [*topup*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup)<sup>1</sup> and [*Eddy*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy)<sup>2</sup>, as implemented via MRTrix3's [*dwifslpreproc*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwifslpreproc.html)<sup>3</sup>. Note that the pipeline assumes **opposite** phase encoding directions, as it was found to be optimal for SDC<sup>4</sup>.
 
    <p align="center"> 
-   <img width="300" src="images/preprocessing/TOPUP_example.gif" > 
+   <img width="500" src="images/preprocessing/SDC.gif" > 
    </p>
    <p align="center"> 
-   <img align="center" height="243" src="images/preprocessing/TOPUP_example2.gif" >
-   </p>
 
     *Figure 1:* AP and PA represent the opposite, uncorrected, B0 volumes - extracted from opposite phase-encoded DWIs, "corrected" stands for post-SDC implementation of *dwifslpreproc*.
 3. B1 field inhomogeneity correction for a DWI volume series, using the N4 algorithm as provided in ANTs* ([*N4BiasFieldCorrection*](https://simpleitk.readthedocs.io/en/master/link_N4BiasFieldCorrection_docs.html))<sup>5</sup>, as implemented in MRTtrix3's [*dwibiascorrect*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwibiascorrect.html#dwibiascorrect-ants)<sup>3</sup>.
@@ -49,11 +47,11 @@ To account for registration-induced biases, we've implemented a within-subject (
 3. Applying halfway transformation to both sessions’ b<sub>0</sub> (forward to pre, backward to post), registrating them into subject's "middle" space.
 4. Calculating subject’s average (between sessions) b<sub>0</sub>, as the average of both coregistered b<sub>0</sub>s.
 <p align="center"> 
-   <img width="400" src="images/registrations/coreg_within.gif" > 
+   <img width="500" src="images/registrations/coreg_within.gif" > 
 </p>
 5. Same procedure is applied to register (between-sessions) subjects’ anatomical (T1) images.
 <p align="center"> 
-   <img width="400" src="images/registrations/coreg_t1_within.gif" > 
+   <img width="500" src="images/registrations/coreg_t1_within.gif" > 
 </p>
 
 ## **Co-registrations and Normalization**
@@ -62,7 +60,7 @@ Note that all registerations procedures denoted below, when performed on a longi
 Coregistration, in this case, refers to the registration of images of different modalities (i.e DWI, T<sub>1</sub>, etc.) of the same subject.
 Coregisteration is performed using FSL's epi_reg" script, performing appropriate linear registration between subject's B<sub>0</sub> and T<sub>1</sub> images.
 <p align="center"> 
-   <img width="400" src="images/registrations/coreg_modalities.gif" > 
+   <img width="500" src="images/registrations/coreg_modalities.gif" > 
 </p>
 
 ### **Normalization**
@@ -70,7 +68,7 @@ By default, the *normalization* procedure conducted as part of this pipeline mak
 #### **CAT12**
 CAT12 is a structural preprocessing tool offered as an addition to the Statistical Parametric Mapping (SPM) toolbox. It offers robust spatial normalization algorithms, as well as a Quality Assurance (QA) score regarding the structural image being processed, for example:
 <p align="center"> 
-   <img width="400" src="images/registrations/cat_example.jpg" > 
+   <img width="500" src="images/registrations/cat_example.jpg" > 
 </p>
 
 #### **fsl_anat**
@@ -84,7 +82,7 @@ In case the user doesn't have MATLAB/SPM/CAT12 installed, the pipeline will reso
 7. Subcortical structure segmentation using FIRST.
 A summarized presentation of the anatomical preprocessing conducted via *fsl_anat*:
 <p align="center"> 
-   <img width="400" src="images/registrations/anat_preproc.gif" > 
+   <img width="500" src="images/registrations/anat_preproc.gif" > 
 </p>
 
 ___
