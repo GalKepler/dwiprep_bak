@@ -20,10 +20,10 @@ ____
 2. **Motion & Susceptability Distortions Correction (SDC)** using FSL's [*topup*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup)<sup>1</sup> and [*Eddy*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy)<sup>2</sup>, as implemented via MRTrix3's [*dwifslpreproc*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwifslpreproc.html)<sup>3</sup>. Note that the pipeline assumes **opposite** phase encoding directions, as it was found to be optimal for SDC<sup>4</sup>.
 
    <p align="center"> 
-   <img width="300" src="images/TOPUP_example.gif" > 
+   <img width="300" src="images/preprocessing/TOPUP_example.gif" > 
    </p>
    <p align="center"> 
-   <img align="center" height="243" src="images/TOPUP_example2.gif" >
+   <img align="center" height="243" src="images/preprocessing/TOPUP_example2.gif" >
    </p>
 
     *Figure 1:* AP and PA represent the opposite, uncorrected, B0 volumes - extracted from opposite phase-encoded DWIs, "corrected" stands for post-SDC implementation of *dwifslpreproc*.
@@ -37,8 +37,24 @@ Following the preprocessing of DWI data, the pipeline automatically estimates se
 1. **Estimation of diffusion tensor** using MRTrix3 *tensor2metric* implementation of the Weighted Linear Least Squares estimation of diffusion MRI parameters<sup>8</sup>.
 2. **Generation of tensor-derived parameters maps**<sup>9,10</sup>
 <p align="center"> 
-   <img width="400" src="images/tensor_parameters.png" > 
-   </p>
+   <img width="400" src="images/tensors/tensor_parameters.png" > 
+</p>
+
+___
+# Registration pipeline
+## Longitudinal (Multi-sessions)
+To account for registration-induced biases, we've implemented a within-subject (i.e, between-sessions) registration pipeline, before normalizing subject's data into standard space. This implementation includes the following steps:
+1. Registration of subject’s first session ("pre") b<sub>0</sub> to it’s second one (“post”) b<sub>0</sub> and vice versa (post's b<sub>0</sub> to pre's b<sub>0</sub>), using FSL’s *flirt*<sup>11,12</sup>, with a *mutual information* cost function.
+2. Calculation of forward and backward *halfway transformation matrices* (pre to post and post to pre, accordingly) using FSL’s *avscle*. 
+3. Applying halfway transformation to both sessions’ b<sub>0</sub> (forward to pre, backward to post), registrating them into subject's "middle" space.
+4. Calculating subject’s average (between sessions) b<sub>0</sub>, as the average of both coregistered b<sub>0</sub>s.
+<p align="center"> 
+   <img width="400" src="images/registrations/coreg_within.gif" > 
+</p>
+5. Same procedure is applied to register (between-sessions) subjects’ anatomical (T1) images.
+<p align="center"> 
+   <img width="400" src="images/registrations/coreg_t1_within.gif" > 
+</p>
 
 ___
 ## References
@@ -52,3 +68,7 @@ ___
 8. Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 9. Basser, P. J.; Mattiello, J. & Lebihan, D. MR diffusion tensor spectroscopy and imaging. Biophysical Journal, 1994, 66, 259-267
 10. Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
+11. Jenkinson, M., Bannister, P., Brady, M., Smith, S., 2002. Improved optimization for the
+robust and accurate linear registration and motion correction of brain images. Neuroimage 17, 825-841.
+12. Jenkinson, M., Smith, S., 2001. A global optimisation method for robust affine
+registration of brain images. Med Image Anal 5, 143-156.
