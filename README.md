@@ -12,17 +12,33 @@ This tool allows you to easily do the following:
 - Automate processing steps.
 
 ____
-# Preprocessing pipelines (including demonstrations):
-## Longitudinal (multi-sessions):
-1. Extract opposite phase-encoding DWI's B0 volumes for later Susceptability Distortions Correction (SDC)
+# Preprocessing (including demonstrations):
+
+1. Extraction of opposite phase-encoding DWI's **B<sub>0</sub> volumes** for later Susceptability Distortions Correction (SDC).
 
 
-2. Susceptability Distortions Correction (SDC) using FSL's [*topup*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup)<sup>1</sup> and [*Eddy*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy)<sup>2</sup>, as implemented via MRTrix3's [*dwifslpreproc*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwifslpreproc.html)<sup>3</sup>. Note that the pipeline assumes **opposite** phase encoding directions, as it was found to be optimal for SDC<sup>4</sup>
+2. **Motion & Susceptability Distortions Correction (SDC)** using FSL's [*topup*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup)<sup>1</sup> and [*Eddy*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy)<sup>2</sup>, as implemented via MRTrix3's [*dwifslpreproc*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwifslpreproc.html)<sup>3</sup>. Note that the pipeline assumes **opposite** phase encoding directions, as it was found to be optimal for SDC<sup>4</sup>.
 
-   <img src="images/TOPUP_example.gif" width="300"> <img src="images/TOPUP_example2.gif" height="243">
+   <p align="center"> 
+   <img width="300" src="images/TOPUP_example.gif" > 
+   </p>
+   <p align="center"> 
+   <img align="center" height="243" src="images/TOPUP_example2.gif" >
+   </p>
 
     *Figure 1:* AP and PA represent the opposite, uncorrected, B0 volumes - extracted from opposite phase-encoded DWIs, "corrected" stands for post-SDC implementation of *dwifslpreproc*.
-3. B1 field inhomogeneity correction for a DWI volume series, using the N4 algorithm as provided in ANTs ([*N4BiasFieldCorrection*](https://simpleitk.readthedocs.io/en/master/link_N4BiasFieldCorrection_docs.html))<sup>5</sup>, as implemented in MRTtrix3's [*dwibiascorrect*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwibiascorrect.html#dwibiascorrect-ants)<sup>3</sup>
+3. B1 field inhomogeneity correction for a DWI volume series, using the N4 algorithm as provided in ANTs* ([*N4BiasFieldCorrection*](https://simpleitk.readthedocs.io/en/master/link_N4BiasFieldCorrection_docs.html))<sup>5</sup>, as implemented in MRTtrix3's [*dwibiascorrect*](https://mrtrix.readthedocs.io/en/latest/reference/commands/dwibiascorrect.html#dwibiascorrect-ants)<sup>3</sup>.
+
+\* In case ANTs is not installed in user's computer, the pipeline will use FSL's  *fast* algorithm<sup>6,7</sup>, which is discouraged due to its dependency on DWI's brain masking.
+
+___
+# Estimation of diffusion (kurtosis) tensor & tensor-derived parameters
+Following the preprocessing of DWI data, the pipeline automatically estimates several, widely used, tensor-derived parameters:
+1. **Estimation of diffusion tensor** using MRTrix3 *tensor2metric* implementation of the Weighted Linear Least Squares estimation of diffusion MRI parameters<sup>8</sup>.
+2. **Generation of tensor-derived parameters maps**<sup>9,10</sup>
+<p align="center"> 
+   <img width="400" src="images/tensor_parameters.png" > 
+   </p>
 
 ___
 ## References
@@ -31,3 +47,8 @@ ___
 3. Tournier, J. D., Smith, R., Raffelt, D., Tabbara, R., Dhollander, T., Pietsch, M., ... & Connelly, A. (2019). MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 202, 116137.
 4. Gu, X., & Eklund, A. (2019). Evaluation of six phase encoding based susceptibility distortion correction methods for diffusion MRI. Frontiers in neuroinformatics, 13, 76.
 5. Tustison, N. J., Avants, B. B., Cook, P. A., Zheng, Y., Egan, A., Yushkevich, P. A., & Gee, J. C. (2010). N4ITK: improved N3 bias correction. IEEE transactions on medical imaging, 29(6), 1310-1320.
+6. Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+7. Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
+8. Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
+9. Basser, P. J.; Mattiello, J. & Lebihan, D. MR diffusion tensor spectroscopy and imaging. Biophysical Journal, 1994, 66, 259-267
+10. Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
