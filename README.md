@@ -12,7 +12,7 @@ This tool allows you to easily do the following:
 - Automate processing steps.
 
 ____
-# Preprocessing (including demonstrations):
+# **Preprocessing (including demonstrations):**
 
 1. Extraction of opposite phase-encoding DWI's **B<sub>0</sub> volumes** for later Susceptability Distortions Correction (SDC).
 
@@ -32,7 +32,7 @@ ____
 \* In case ANTs is not installed in user's computer, the pipeline will use FSL's  *fast* algorithm<sup>6,7</sup>, which is discouraged due to its dependency on DWI's brain masking.
 
 ___
-# Estimation of diffusion (kurtosis) tensor & tensor-derived parameters
+# **Estimation of diffusion (kurtosis) tensor & tensor-derived parameters**
 Following the preprocessing of DWI data, the pipeline automatically estimates several, widely used, tensor-derived parameters:
 1. **Estimation of diffusion tensor** using MRTrix3 *tensor2metric* implementation of the Weighted Linear Least Squares estimation of diffusion MRI parameters<sup>8</sup>.
 2. **Generation of tensor-derived parameters maps**<sup>9,10</sup>
@@ -41,8 +41,8 @@ Following the preprocessing of DWI data, the pipeline automatically estimates se
 </p>
 
 ___
-# Registration pipeline
-## Longitudinal (Multi-sessions)
+# **Registration pipeline**
+## **Longitudinal (Multi-sessions)**
 To account for registration-induced biases, we've implemented a within-subject (i.e, between-sessions) registration pipeline, before normalizing subject's data into standard space. This implementation includes the following steps:
 1. Registration of subject’s first session ("pre") b<sub>0</sub> to it’s second one (“post”) b<sub>0</sub> and vice versa (post's b<sub>0</sub> to pre's b<sub>0</sub>), using FSL’s *flirt*<sup>11,12</sup>, with a *mutual information* cost function.
 2. Calculation of forward and backward *halfway transformation matrices* (pre to post and post to pre, accordingly) using FSL’s *avscle*. 
@@ -56,7 +56,39 @@ To account for registration-induced biases, we've implemented a within-subject (
    <img width="400" src="images/registrations/coreg_t1_within.gif" > 
 </p>
 
+## **Co-registrations and Normalization**
+Note that all registerations procedures denoted below, when performed on a longitudinal dataset, do so for the within-subject (between-sessions) registered images.
+### **Coregistration (DWI to T<sub>1</sub>)**
+Coregistration, in this case, refers to the registration of images of different modalities (i.e DWI, T<sub>1</sub>, etc.) of the same subject.
+Coregisteration is performed using FSL's epi_reg" script, performing appropriate linear registration between subject's B<sub>0</sub> and T<sub>1</sub> images.
+<p align="center"> 
+   <img width="400" src="images/registrations/coreg_modalities.gif" > 
+</p>
+
+### **Normalization**
+By default, the *normalization* procedure conducted as part of this pipeline makes use of the [Computational Anatomy Toolbox (CAT)](http://www.neuro.uni-jena.de/cat/) for SPM. Since it requires MATLAB and SPM to be installed, the pipeline will resort to using FSL's [*fsl_anat*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat) script.
+#### **CAT12**
+CAT12 is a structural preprocessing tool offered as an addition to the Statistical Parametric Mapping (SPM) toolbox. It offers robust spatial normalization algorithms, as well as a Quality Assurance (QA) score regarding the structural image being processed, for example:
+<p align="center"> 
+   <img width="400" src="images/registrations/cat_example.jpg" > 
+</p>
+
+#### **fsl_anat**
+In case the user doesn't have MATLAB/SPM/CAT12 installed, the pipeline will resort to performing the spatial normalization using FSL's *fsl_anat*, which includes the following:
+1. Reorientation to standard (MNI) orientation using fslreorient2std.
+2. Automatically cropping the image using robustfov.
+3. Bias-field correction (RF/B1-inhomogeneity-correction) using FAST.
+4. Registration to standard space (linear and nonlinear) using FLIRT and FNIRT.
+5. Brain extraction (FNIRT-based)
+6. Tissue-type segmentation using FAST.
+7. Subcortical structure segmentation using FIRST.
+A summarized presentation of the anatomical preprocessing conducted via *fsl_anat*:
+<p align="center"> 
+   <img width="400" src="images/registrations/anat_preproc.gif" > 
+</p>
+
 ___
+
 ## References
 1. Andersson, J. L., Skare, S., & Ashburner, J. (2003). How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. Neuroimage, 20(2), 870-888.
 2. Andersson, J. L., & Sotiropoulos, S. N. (2016). An integrated approach to correction for off-resonance effects and subject movement in diffusion MR imaging. Neuroimage, 125, 1063-1078.
