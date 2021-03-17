@@ -73,6 +73,7 @@ CAT12 is a structural preprocessing tool offered as an addition to the Statistic
 <p align="center"> 
    <img width="500" src="images/registrations/cat12_preproc.gif" > 
 </p>
+
 ### **fsl_anat**
 In case the user doesn't have MATLAB/SPM/CAT12 installed, the pipeline will resort to performing the spatial normalization using FSL's *fsl_anat*, which includes the following:
 1. Reorientation to standard (MNI) orientation using fslreorient2std.
