@@ -95,6 +95,7 @@ For example, a reverse registration performed on the Brainnetome parcellation at
 <p align="center"> 
    <img width="500" src="images/registrations/atlas2native.gif"> 
 </p>
+
 ___
 
 ## References
