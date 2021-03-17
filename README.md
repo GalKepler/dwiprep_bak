@@ -56,22 +56,24 @@ To account for registration-induced biases, we've implemented a within-subject (
 
 ## **Co-registrations and Normalization**
 Note that all registerations procedures denoted below, when performed on a longitudinal dataset, do so for the within-subject (between-sessions) registered images.
-### **Coregistration (DWI to T<sub>1</sub>)**
+## **Coregistration (DWI to T<sub>1</sub>)**
 Coregistration, in this case, refers to the registration of images of different modalities (i.e DWI, T<sub>1</sub>, etc.) of the same subject.
 Coregisteration is performed using FSL's epi_reg" script, performing appropriate linear registration between subject's B<sub>0</sub> and T<sub>1</sub> images.
 <p align="center"> 
    <img width="500" src="images/registrations/coreg_modalities.gif" > 
 </p>
 
-### **Normalization**
+## **Normalization**
 By default, the *normalization* procedure conducted as part of this pipeline makes use of the [Computational Anatomy Toolbox (CAT)](http://www.neuro.uni-jena.de/cat/) for SPM. Since it requires MATLAB and SPM to be installed, the pipeline will resort to using FSL's [*fsl_anat*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat) script.
-#### **CAT12**
+### **CAT12**
 CAT12 is a structural preprocessing tool offered as an addition to the Statistical Parametric Mapping (SPM) toolbox. It offers robust spatial normalization algorithms, as well as a Quality Assurance (QA) score regarding the structural image being processed, for example:
 <p align="center"> 
    <img width="500" src="images/registrations/cat_example.jpg" > 
 </p>
-
-#### **fsl_anat**
+<p align="center"> 
+   <img width="500" src="images/registrations/cat12_preproc.gif" > 
+</p>
+### **fsl_anat**
 In case the user doesn't have MATLAB/SPM/CAT12 installed, the pipeline will resort to performing the spatial normalization using FSL's *fsl_anat*, which includes the following:
 1. Reorientation to standard (MNI) orientation using fslreorient2std.
 2. Automatically cropping the image using robustfov.
@@ -85,6 +87,14 @@ A summarized presentation of the anatomical preprocessing conducted via *fsl_ana
    <img width="500" src="images/registrations/anat_preproc.gif" > 
 </p>
 
+
+## **Inverse registration**
+Following the "forward" registration (i.e, from subject to average space), and only if a parcellation atlas in MNI space is given as input for the pipeline, a "backward" registration (i.e from MNI to native space) is performed to transform the parcellation atlas into subject's space.
+Note that this behaviour is promoted due to our agenda to promote region-based analyses (RBA), as described in our paper<sup>13</sup> (under review).
+For example, a reverse registration performed on the Brainnetome parcellation atlas<sup>14</sup>:
+<p align="center"> 
+   <img width="500" src="images/registrations/atlas2native.gif"> 
+</p>
 ___
 
 ## References
@@ -100,5 +110,6 @@ ___
 10. Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
 11. Jenkinson, M., Bannister, P., Brady, M., Smith, S., 2002. Improved optimization for the
 robust and accurate linear registration and motion correction of brain images. Neuroimage 17, 825-841.
-12. Jenkinson, M., Smith, S., 2001. A global optimisation method for robust affine
-registration of brain images. Med Image Anal 5, 143-156.
+12. Jenkinson, M., Smith, S., 2001. A global optimisation method for robust affine registration of brain images. Med Image Anal 5, 143-156.
+13. Ben-Zvi, G., Hofstetter, S., Tavor, I. \& Assaf, Y. (2021). Measuring neuroplasticity with diffusion MRI: experimental considerations. (under review)
+14. Fan, L., Li, H., Zhuo, J., Zhang, Y., Wang, J., Chen, L., ... & Jiang, T. (2016). The human brainnetome atlas: a new brain atlas based on connectional architecture. Cerebral cortex, 26(8), 3508-3526.
