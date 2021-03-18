@@ -2,12 +2,12 @@
 
 This pipeline is being developed and maintaing [Yaniv Assaf's lab at Tel Aviv University](https://www.yalab.sites.tau.ac.il/), as an open-source tool for preprocessing of dMRI data.
 
-_DWIPrep_ is a diffusion magnetic resonance image (dMRI) data preprocessing pipeline that is designed to provide and easily accessible, robust and dynamic interface, allowing basic preprocessing for both within-subject (plasticity) and between-subjects datasets, envolving a wide variety of dMRI scan acquisitions. <br />
+_DWIPrep_ is a diffusion magnetic resonance image (dMRI) data preprocessing pipeline that is designed to provide an easily accessible, robust and dynamic interface, allowing basic pre-processing for both within-subject (plasticity) and between-subjects datasets, envolving a wide variety of dMRI scan acquisitions. <br />
 The _dMRIPrep_ pipeline uses a combination of tools from well-known software packages, including [FSL](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/), [MRtrix3](https://mrtrix.readthedocs.io/en/latest/), [SPM](https://www.fil.ion.ucl.ac.uk/spm/) and [CAT12](http://www.neuro.uni-jena.de/cat/). This pipeline was designed to provide a potentially best preprocessing pipeline for a wide range of dMRI data acquisition parameters, and will be updated as new neuroimaging software become available.
 
 This tool allows you to easily do the following:
 
-- Preprocess a wide variety of dMRI data, from raw to fully preprocessed form.
+- Preprocess a wide variety of dMRI data, from raw NIfTI (structured to follow the [BIDS format](https://bids-specification.readthedocs.io/en/stable/)) to fully preprocessed form.
 - Account for specific preprocessing procedures that are crucial of analyzing plasticity (i.e, within-subjects) datasets.
 - Automate processing steps.
 
@@ -42,8 +42,8 @@ ___
 # **Registration pipeline**
 ## **Longitudinal (Multi-sessions)**
 To account for registration-induced biases, we've implemented a within-subject (i.e, between-sessions) registration pipeline, before normalizing subject's data into standard space. This implementation includes the following steps:
-1. Registration of subject’s first session ("pre") b<sub>0</sub> to it’s second one (“post”) b<sub>0</sub> and vice versa (post's b<sub>0</sub> to pre's b<sub>0</sub>), using FSL’s *flirt*<sup>11,12</sup>, with a *mutual information* cost function.
-2. Calculation of forward and backward *halfway transformation matrices* (pre to post and post to pre, accordingly) using FSL’s *avscle*. 
+1. Registration of subject’s first session ("pre") b<sub>0</sub> to it’s second one (“post”) b<sub>0</sub> and vice versa (post's b<sub>0</sub> to pre's b<sub>0</sub>), using FSL’s [*flirt*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT)<sup>11,12</sup>, with a *mutual information* cost function.
+2. Calculation of forward and backward *halfway transformation matrices* (pre to post and post to pre, accordingly) using FSL’s [*avscle*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/UserGuide#avscale). 
 3. Applying halfway transformation to both sessions’ b<sub>0</sub> (forward to pre, backward to post), registrating them into subject's "middle" space.
 4. Calculating subject’s average (between sessions) b<sub>0</sub>, as the average of both coregistered b<sub>0</sub>s.
 <p align="center"> 
@@ -58,7 +58,7 @@ To account for registration-induced biases, we've implemented a within-subject (
 Note that all registerations procedures denoted below, when performed on a longitudinal dataset, do so for the within-subject (between-sessions) registered images.
 ## **Coregistration (DWI to T<sub>1</sub>)**
 Coregistration, in this case, refers to the registration of images of different modalities (i.e DWI, T<sub>1</sub>, etc.) of the same subject.
-Coregisteration is performed using FSL's epi_reg" script, performing appropriate linear registration between subject's B<sub>0</sub> and T<sub>1</sub> images.
+Coregisteration is performed using FSL's [*epi_reg*](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/UserGuide#epi_reg) script, performing appropriate linear registration between subject's B<sub>0</sub> and T<sub>1</sub> images.
 <p align="center"> 
    <img width="500" src="images/registrations/coreg_modalities.gif" > 
 </p>
