@@ -1,3 +1,6 @@
+"""
+Command line interface execution management.
+"""
 import argparse
 
 from dwiprep.cli.configuration import PARSER_CONFIGRATION
