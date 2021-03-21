@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import nipype.interfaces.fsl as fsl
-
 from dwiprep.preprocessing.utils.conversions import mrtrix_conversion
 
 
@@ -9,7 +8,9 @@ def register_between_sessions(
     ses_1: Path, ses_2: Path, img_type: str, target_dir: Path
 ) -> dict:
     """
-    Perform a series of manipulations on both sessions' images to register them to midway space.
+    Perform a series of manipulations on both sessions' images to register
+    them to midway space.
+
     Parameters
     ----------
     ses_1 : Path
@@ -24,7 +25,7 @@ def register_between_sessions(
     Returns
     -------
     dict
-        Dןictionary containing path to output files.
+        Dןictionary containing path to output files
     """
     registered_files = {}
     cmds = []
@@ -38,13 +39,16 @@ def register_between_sessions(
         registered_files[aff_title]["Transform_matrix"] = out_aff
         registered_files[aff_title]["Transformed_file"] = out_file
         cmds.append(
-            f"flirt -in {in_file} -ref {ref_file} -omat {out_initial_aff} -cost mutualinfo"
+            f"flirt -in {in_file} -ref {ref_file} \
+            -omat {out_initial_aff} -cost mutualinfo"
         )
         cmds.append(
-            f"avscale {out_initial_aff} | grep -A 4 Forward | tail -n 4 > {out_aff}"
+            f"avscale {out_initial_aff} | grep -A 4 Forward | \
+            tail -n 4 > {out_aff}"
         )
         cmds.append(
-            f"flirt -in {in_file} -ref {ses_1} -out {out_file} -applyxfm -init {out_aff} -cost mutualinfo"
+            f"flirt -in {in_file} -ref {ses_1} -out {out_file} -applyxfm -init\
+             {out_aff} -cost mutualinfo"
         )
         cmds.append(f"rm {out_initial_aff}")
     return registered_files, cmds
@@ -99,7 +103,8 @@ def apply_xfm_to_mifs(
 
 def apply_xfm(in_file: Path, ref: Path, aff: Path, out_file: Path):
     """
-    Apply pre-calculated transformation matrix to file
+    Apply pre-calculated transformation matrix to file.
+
     Parameters
     ----------
     in_file : Path
@@ -130,7 +135,8 @@ def linear_registration(
     coregister: bool = False,
 ):
     """
-    Wrap inputs into FSL's FLIRT interface for linear registraions
+    Wrap inputs into FSL's FLIRT interface for linear registraions.
+
     Parameters
     ----------
     in_file : Path
@@ -143,10 +149,9 @@ def linear_registration(
         Indicating whether it's a within-subject registration, by default False
     """
     if not out_mat:
-        out_mat = (
-            out_file.parent
-            / f"{in_file.name.split('.')[0]}-{ref.name.split('.')[0]}_affine.mat"
-        )
+        in_name = in_file.name.split(".")[0]
+        ref_name = ref.name.split(".")[0]
+        out_mat = out_file.parent / f"{in_name}-{ref_name}_affine.mat"
     flt = fsl.FLIRT()
     flt.inputs.in_file = in_file
     flt.inputs.reference = ref
@@ -188,14 +193,16 @@ def epi_reg(epi: Path, anat: Path, anat_brain: Path, out_prefix: Path):
     out_prefix : Path
         Path to output coregistered image
     """
-    cmd = f"epi_reg --epi={epi} --t1={anat} --t1brain={anat_brain} --out={out_prefix}"
+    cmd = f"epi_reg --epi={epi} --t1={anat} --t1brain={anat_brain} \
+    --out={out_prefix}"
 
     return cmd
 
 
 def concat_affines(affine_1: Path, affine_2: Path, out_file: Path):
     """
-    Concatenate multiple affine transformations into one
+    Concatenate multiple affine transformations into one.
+
     Parameters
     ----------
     affine_1 : Path
@@ -211,7 +218,8 @@ def concat_affines(affine_1: Path, affine_2: Path, out_file: Path):
 
 def preprocess_anatomical(in_file: Path, out_dir: Path):
     """
-    Wrapper for fsl_anat function for anatomical preprocessing
+    Wrapper for fsl_anat function for anatomical preprocessing.
+
     Parameters
     ----------
     in_file : Path
@@ -227,7 +235,8 @@ def apply_warp(
     in_file: Path, ref: Path, warp: Path, out_file: Path, interp: str = None
 ):
     """
-    Apply pre-calculated warp field coefficients to normalize an image
+    Apply pre-calculated warp field coefficients to normalize an image.
+
     Parameters
     ----------
     in_file : Path

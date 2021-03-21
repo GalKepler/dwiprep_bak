@@ -1,7 +1,7 @@
-import os
-import warnings
-import shutil
 import gzip
+import os
+import shutil
+import warnings
 from pathlib import Path
 
 from dwiprep.preprocessing import messages as preproc_messages
@@ -130,7 +130,8 @@ class RegistrationsPipeline:
 
     def coregister(self, img_type: str, target_dir: Path):
         """
-        Co-register between-sessions images of the same type
+        Co-register between-sessions images of the same type.
+
         Parameters
         ----------
         img_type : str
@@ -184,7 +185,8 @@ class RegistrationsPipeline:
 
     def average_coregistered(self, img_type: str, target_dir: Path):
         """
-        Averages multiple images
+        Averages multiple images.
+
         Parameters
         ----------
         img_type : str
@@ -268,7 +270,8 @@ class RegistrationsPipeline:
 
     def skull_strip(self, in_file: Path):
         """
-        Use FSL's BET to remove skull
+        Use FSL's BET to remove skull.
+
         Parameters
         ----------
         in_file : Path
@@ -293,7 +296,8 @@ class RegistrationsPipeline:
 
     def register_epi_to_anatomical(self, target_dir: Path):
         """
-        Apply coregistration using a wrapper for FSL's epi_reg script
+        Apply coregistration using a wrapper for FSL's epi_reg script.
+
         Parameters
         ----------
         target_dir : Path
@@ -428,7 +432,8 @@ class RegistrationsPipeline:
 
     def normalize_tensors_fsl(self):
         """
-        Apply pre-calculated transforms to tensor-derived parameters to normalize them into standard space.
+        Apply pre-calculated transforms to tensor-derived parameters to
+        normalize them into standard space.
         """
         warp = (
             self.registrations_dict.get("preprocessed_t1w")
@@ -472,7 +477,8 @@ class RegistrationsPipeline:
 
     def normalize_tensors_cat(self):
         """
-        Apply pre-calculated transforms to tensor-derived parameters to normalize them into standard space.
+        Apply pre-calculated transforms to tensor-derived parameters to
+        normalize them into standard space.
         """
         warp = [
             f

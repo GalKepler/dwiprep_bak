@@ -1,6 +1,6 @@
-from pathlib import Path
 import gzip
 import shutil
+from pathlib import Path
 
 ADD_PATH = Path(__file__).parent.absolute()
 CAT_TEMPLATE = ADD_PATH / "run_default_cat.m"
@@ -9,6 +9,7 @@ CAT_TEMPLATE = ADD_PATH / "run_default_cat.m"
 def check_matlab():
     try:
         import ssl
+
         import matlab.engine
 
         return True
@@ -18,6 +19,7 @@ def check_matlab():
 
 def run_default_cat(anat_file: Path):
     import ssl
+
     import matlab.engine
 
     eng = matlab.engine.start_matlab()
@@ -29,6 +31,7 @@ def apply_deformations(
     warp_file: Path, in_file: Path, interp: int, out_file: Path
 ):
     import ssl
+
     import matlab.engine
 
     tmp = in_file.parent / f"{in_file.name.split('.')[0]}.nii"
@@ -48,3 +51,6 @@ def apply_deformations(
         with gzip.open(out_file, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
     flag.unlink()
+
+
+# flake8: noqa: F401
