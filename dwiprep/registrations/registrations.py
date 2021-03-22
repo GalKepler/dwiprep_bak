@@ -21,19 +21,23 @@ class RegistrationsPipeline:
         use_matlab: bool = False,
     ):
         """
-        Initiate the RegistrationPipeline instance
+        Initiate the RegistrationPipeline instance.
+        
         Parameters
         ----------
         preprocess_dict : dict
-            [A dictionary containing keys and values of subject's "corrected" data]
+            A dictionary containing keys and values of subject's "corrected"
+            data
         target_dir : Path
-            [Path to subject's output derivatives directory]
+            Path to subject's output derivatives directory
         longitudinal : bool
-            [Whether to perform within-subject, cross-sessions registration]
+            Whether to perform within-subject, cross-sessions registration
         atlas : dict, optional
-            [Dictionary with "path" and "name" of a parcellation atlas in MNI space], by default None
+            Dictionary with "path" and "name" of a parcellation atlas in MNI
+            space, by default None
         use_matlab : bool, optional
-            [If True, use SPM's CAT12 anatomical preprocessing pipeline, otherwise use fsl_anat script.], by default True
+            If True, use SPM's CAT12 anatomical preprocessing pipeline,
+            otherwise use fsl_anat script, by default True
         """
         self.registrations_dict, self.sessions = self.initiate_registrations(
             preprocess_dict, target_dir
@@ -74,20 +78,22 @@ class RegistrationsPipeline:
         self, preprocess_dict: dict, target_dir: Path
     ) -> dict:
         """
-        Extracts relevant files from the subject's "corrected" dictionary
+        Extracts relevant files from the subject's "corrected" dictionary.
+        
         Parameters
         ----------
         preprocess_dict : dict
-            [Subject's "corrected" dictionary (i.e result of the PreprocessPipeline run)]
+            Subject's "corrected" dictionary (i.e result of the
+            PreprocessPipeline run)
         target_dir : Path
-            [Path to subject's output derivatives directory]
+            Path to subject's output derivatives directory
 
         Returns
         -------
-        [dict]
-            [Dictionary defining subject's derivatives' paths]
-        [list]
-            [List defining session found in subject's data]
+        dict
+            Dictionary defining subject's derivatives' paths
+        list
+            List defining session found in subject's data
         """
         registration_dict = {"directory": target_dir}
         sessions = []
@@ -145,10 +151,11 @@ class RegistrationsPipeline:
     def average_b0(self, target_dir: Path):
         """
         Average preprocessed B0 volumes.
+        
         Parameters
         ----------
         target_dir : Path
-            [Path to subject's output directory]
+            Path to subject's output directory
         """
         target_dir = target_dir / "mean_b0"
         target_dir.mkdir(exist_ok=True)
@@ -185,7 +192,7 @@ class RegistrationsPipeline:
         Parameters
         ----------
         img_type : str
-            str that is one of the keys in self.registrations_dict[session]
+            One of the keys in self.registrations_dict[session]
         target_dir : Path
             Path to output directory
         """
@@ -277,12 +284,14 @@ class RegistrationsPipeline:
         """
         Apply calculated transformation matrices to tensors-derived parameters
         images.
+        
         Parameters
         ----------
         ref : Path
-            [Path to "reference" file (i.e the file to which the tensors parameters will be registered to)]
+            Path to "reference" file (i.e the file to which the tensors
+            parameters will be registered to)
         keep_tmps : bool, optional
-            [Whether to keep intermidiate files], by default False
+            Whether to keep intermidiate files, by default False
         """
         for session in self.sessions:
             coreg_tensors = {}
@@ -456,7 +465,8 @@ class RegistrationsPipeline:
 
     def cat_preproc_anat(self, target_dir: Path):
         """
-        Perform SPM's CAT12 anatomical preprocessing and normalization
+        Perform SPM's CAT12 anatomical preprocessing and normalization.
+        
         Parameters
         ----------
         target_dir : Path
@@ -579,7 +589,7 @@ class RegistrationsPipeline:
 
     def register_parcellation_fsl(self):
         """
-        Register parcellation from standard to subject's native space
+        Register parcellation from standard to subject's native space.
         """
         warp = (
             self.registrations_dict.get("preprocessed_t1w")
@@ -617,7 +627,7 @@ class RegistrationsPipeline:
 
     def register_parcellation_cat(self):
         """
-        Register parcellation from standard to subject's native space
+        Register parcellation from standard to subject's native space.
         """
         warp = [
             f
