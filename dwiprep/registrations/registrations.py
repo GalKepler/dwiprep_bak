@@ -20,6 +20,25 @@ class RegistrationsPipeline:
         atlas: dict = None,
         use_matlab: bool = False,
     ):
+        """
+        Initiate the RegistrationPipeline instance.
+        
+        Parameters
+        ----------
+        preprocess_dict : dict
+            A dictionary containing keys and values of subject's "corrected"
+            data
+        target_dir : Path
+            Path to subject's output derivatives directory
+        longitudinal : bool
+            Whether to perform within-subject, cross-sessions registration
+        atlas : dict, optional
+            Dictionary with "path" and "name" of a parcellation atlas in MNI
+            space, by default None
+        use_matlab : bool, optional
+            If True, use SPM's CAT12 anatomical preprocessing pipeline,
+            otherwise use fsl_anat script, by default True
+        """
         self.registrations_dict, self.sessions = self.initiate_registrations(
             preprocess_dict, target_dir
         )
@@ -30,6 +49,17 @@ class RegistrationsPipeline:
             self.use_matlab = matlab_functions.check_matlab()
 
     def infer_longitudinal(self):
+        """
+        Defines whether the preprocessing pipeline will include
+        between-sessions registrations (i.e longitudinal preprocessing).
+
+        Raises
+        ------
+        ValueError
+            Informs the user about various types of values in given
+            input_dict. All values must be either lists (longitudinal) or
+            PathLike objects (single)
+        """
         num_sessions = len(self.registrations_dict.keys()) - 1
         if self.longitudinal and (num_sessions < 2):
             message = messages.MISSING_KEYS_LONGITUDIANL.format(
@@ -44,7 +74,27 @@ class RegistrationsPipeline:
             message = colored(message, "yellow")
             warnings.warn(message)
 
-    def initiate_registrations(self, preprocess_dict: dict, target_dir: Path):
+    def initiate_registrations(
+        self, preprocess_dict: dict, target_dir: Path
+    ) -> dict:
+        """
+        Extracts relevant files from the subject's "corrected" dictionary.
+        
+        Parameters
+        ----------
+        preprocess_dict : dict
+            Subject's "corrected" dictionary (i.e result of the
+            PreprocessPipeline run)
+        target_dir : Path
+            Path to subject's output derivatives directory
+
+        Returns
+        -------
+        dict
+            Dictionary defining subject's derivatives' paths
+        list
+            List defining session found in subject's data
+        """
         registration_dict = {"directory": target_dir}
         sessions = []
         for session, session_dict in preprocess_dict.items():
@@ -70,6 +120,8 @@ class RegistrationsPipeline:
         ----------
         in_files : list
             List of files to convert
+        target_dir : Path
+            Path of directory of converted files
         """
         target_dir = target_dir / "anatomical"
         target_dir.mkdir(exist_ok=True)
@@ -99,6 +151,11 @@ class RegistrationsPipeline:
     def average_b0(self, target_dir: Path):
         """
         Average preprocessed B0 volumes.
+        
+        Parameters
+        ----------
+        target_dir : Path
+            Path to subject's output directory
         """
         target_dir = target_dir / "mean_b0"
         target_dir.mkdir(exist_ok=True)
@@ -135,7 +192,7 @@ class RegistrationsPipeline:
         Parameters
         ----------
         img_type : str
-            str that is one of the keys in self.registrations_dict[session]
+            One of the keys in self.registrations_dict[session]
         target_dir : Path
             Path to output directory
         """
@@ -227,6 +284,14 @@ class RegistrationsPipeline:
         """
         Apply calculated transformation matrices to tensors-derived parameters
         images.
+        
+        Parameters
+        ----------
+        ref : Path
+            Path to "reference" file (i.e the file to which the tensors
+            parameters will be registered to)
+        keep_tmps : bool, optional
+            Whether to keep intermidiate files, by default False
         """
         for session in self.sessions:
             coreg_tensors = {}
@@ -336,6 +401,11 @@ class RegistrationsPipeline:
     def combine_between_session_affines(self, target_dir: Path):
         """
         Combine the within-subjects and between-modalities affines.
+
+        Parameters
+        ----------
+        target_dir : Path
+            Path to output directory
         """
         epi2t1w = self.registrations_dict.get("epi2anatomical").get("affine")
         for session in self.sessions:
@@ -394,6 +464,14 @@ class RegistrationsPipeline:
         )
 
     def cat_preproc_anat(self, target_dir: Path):
+        """
+        Perform SPM's CAT12 anatomical preprocessing and normalization.
+        
+        Parameters
+        ----------
+        target_dir : Path
+            Path to output directory
+        """
         anat_file = self.registrations_dict.get("anatomical")
         out_dir = target_dir / "preprocessed_CAT"
         nii_name = anat_file.name.split(".")[0] + ".nii"
@@ -511,7 +589,7 @@ class RegistrationsPipeline:
 
     def register_parcellation_fsl(self):
         """
-        Register parcellation from standard to subject's native space
+        Register parcellation from standard to subject's native space.
         """
         warp = (
             self.registrations_dict.get("preprocessed_t1w")
@@ -549,7 +627,7 @@ class RegistrationsPipeline:
 
     def register_parcellation_cat(self):
         """
-        Register parcellation from standard to subject's native space
+        Register parcellation from standard to subject's native space.
         """
         warp = [
             f
@@ -579,6 +657,9 @@ class RegistrationsPipeline:
         self.registrations_dict["native_atlas"] = out_file
 
     def rearrange_non_longitudinal_inputs(self):
+        """
+        Rearrange dictionary to match expected structure as if it was longitudinal (won't perform longitudinal registration)
+        """
         for img_type in ["mean_b0", "anatomical"]:
             for session in self.sessions:
                 self.registrations_dict[
