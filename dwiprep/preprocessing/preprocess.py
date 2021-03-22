@@ -13,6 +13,15 @@ class PreprocessPipeline:
     INPUT_KEYS = "anatomical", "ap", "pa"
 
     def __init__(self, input_dict: dict, output_dir: Path):
+        """
+        Initiate the PreprocessPipeline instance
+        Parameters
+        ----------
+        input_dict : dict
+            [Input dictionary containing "anatomical", "ap" and "pa" keys]
+        output_dir : Path
+            [Path to subject's output derivatives directory]
+        """
         self.longitudinal = False
         self.validate_input(input_dict)
         self.input_dict = input_dict
@@ -393,6 +402,9 @@ class PreprocessPipeline:
         self.output_dict[session]["tensors"] = out_files
 
     def run_corrections(self):
+        """
+        Peform the "correction" part of the pipeline, i.e cleaning the data in native-space
+        """
         for session, session_dict in self.input_dict.items():
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
@@ -409,7 +421,13 @@ class PreprocessPipeline:
 
     def run_registrations(self, atlas: dict = None, use_matlab: bool = True):
         """
-        Register DWI (and its derived metrics to MNI space).
+        Apply the registration pipeline via the RegisterationPipeline instance
+        Parameters
+        ----------
+        atlas : dict, optional
+            [Dictionary with "path" and "name" of a parcellation atlas in MNI space], by default None
+        use_matlab : bool, optional
+            [If True, use SPM's CAT12 anatomical preprocessing pipeline, otherwise use fsl_anat script.], by default True
         """
         registrations_dir = self.output_dir / "registrations"
         if not registrations_dir.exists():
