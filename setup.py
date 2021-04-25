@@ -54,4 +54,6 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
+    # package_dir={"": "dwiprep"},
+    # packages=find_packages(where="dwiprep"),
 )

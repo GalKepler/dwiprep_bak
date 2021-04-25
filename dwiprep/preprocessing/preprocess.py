@@ -15,7 +15,7 @@ class PreprocessPipeline:
     def __init__(self, input_dict: dict, output_dir: Path):
         """
         Initiate the PreprocessPipeline instance.
-        
+
         Parameters
         ----------
         input_dict : dict
@@ -24,9 +24,9 @@ class PreprocessPipeline:
             Path to subject's output derivatives directory
         """
         self.longitudinal = False
+        self.infer_longitudinal(input_dict)
         self.validate_input(input_dict)
         self.input_dict = input_dict
-        self.infer_longitudinal()
         self.rearrange_inputs()
         self.expand_input_dict()
 
@@ -74,7 +74,7 @@ class PreprocessPipeline:
                 warnings.warn(message)
                 session_derivatives.mkdir(parents=True)
 
-    def infer_longitudinal(self):
+    def infer_longitudinal(self, input_dict: dict):
         """
         Defines whether the preprocessing pipeline will include
         between-sessions registrations (i.e longitudinal preprocessing).
@@ -86,9 +86,10 @@ class PreprocessPipeline:
             input_dict. All values must be either lists (longitudinal) or
             PathLike objects (single)
         """
-        value_type = set([type(value) for value in self.input_dict.values()])
+        value_type = set([type(value) for value in input_dict.values()])
+        print(value_type)
         if len(value_type) > 1:
-            message = messages.BAD_VALUE_TYPS.format(value_types=value_type)
+            message = messages.BAD_VALUE_TYPES.format(value_types=value_type)
             message = colored(message, "red")
             raise ValueError(message)
         else:
@@ -101,12 +102,13 @@ class PreprocessPipeline:
         Rearanges inputs dictionary to match corresponding sessions for ease
         of use.
         """
-        num_sessions = len(self.input_dict.get("ap"))
+        num_sessions = len([self.input_dict.get("ap")])
         updated_dict = {}
         for session in range(num_sessions):
             session_label = f"ses-{session+1}"
             updated_dict[session_label] = {}
             for key, vals in self.input_dict.items():
+                vals = [vals]
                 updated_dict[session_label][f"{key}"] = {}
                 updated_dict[session_label][f"{key}"]["nii"] = vals[session]
         self.input_dict = updated_dict
@@ -424,7 +426,7 @@ class PreprocessPipeline:
     def run_registrations(self, atlas: dict = None, use_matlab: bool = True):
         """
         Apply the registration pipeline via the RegisterationPipeline instance.
-        
+
         Parameters
         ----------
         atlas : dict, optional

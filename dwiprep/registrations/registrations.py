@@ -22,7 +22,7 @@ class RegistrationsPipeline:
     ):
         """
         Initiate the RegistrationPipeline instance.
-        
+
         Parameters
         ----------
         preprocess_dict : dict
@@ -79,7 +79,7 @@ class RegistrationsPipeline:
     ) -> dict:
         """
         Extracts relevant files from the subject's "corrected" dictionary.
-        
+
         Parameters
         ----------
         preprocess_dict : dict
@@ -151,7 +151,7 @@ class RegistrationsPipeline:
     def average_b0(self, target_dir: Path):
         """
         Average preprocessed B0 volumes.
-        
+
         Parameters
         ----------
         target_dir : Path
@@ -284,7 +284,7 @@ class RegistrationsPipeline:
         """
         Apply calculated transformation matrices to tensors-derived parameters
         images.
-        
+
         Parameters
         ----------
         ref : Path
@@ -466,7 +466,7 @@ class RegistrationsPipeline:
     def cat_preproc_anat(self, target_dir: Path):
         """
         Perform SPM's CAT12 anatomical preprocessing and normalization.
-        
+
         Parameters
         ----------
         target_dir : Path
@@ -561,7 +561,7 @@ class RegistrationsPipeline:
         warp = [
             f
             for f in self.registrations_dict.get("preprocessed_t1w").glob(
-                "mri/y_mean_*.nii"
+                "mri/y_*.nii"
             )
         ][0]
         for session in self.sessions:
@@ -632,7 +632,7 @@ class RegistrationsPipeline:
         warp = [
             f
             for f in self.registrations_dict.get("preprocessed_t1w").glob(
-                "mri/iy_mean_*.nii"
+                "mri/iy_*.nii"
             )
         ][0]
         source = Path(self.atlas.get("path"))
