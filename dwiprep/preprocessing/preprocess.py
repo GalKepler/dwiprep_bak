@@ -28,6 +28,7 @@ class PreprocessPipeline:
         self.validate_input(input_dict)
         self.input_dict = input_dict
         self.rearrange_inputs()
+        print(self.input_dict)
         self.expand_input_dict()
 
         self.validate_output(output_dir)
@@ -87,7 +88,6 @@ class PreprocessPipeline:
             PathLike objects (single)
         """
         value_type = set([type(value) for value in input_dict.values()])
-        print(value_type)
         if len(value_type) > 1:
             message = messages.BAD_VALUE_TYPES.format(value_types=value_type)
             message = colored(message, "red")
@@ -108,7 +108,7 @@ class PreprocessPipeline:
             session_label = f"ses-{session+1}"
             updated_dict[session_label] = {}
             for key, vals in self.input_dict.items():
-                vals = [vals]
+                vals = vals if isinstance(vals, list) else [vals]
                 updated_dict[session_label][f"{key}"] = {}
                 updated_dict[session_label][f"{key}"]["nii"] = vals[session]
         self.input_dict = updated_dict
