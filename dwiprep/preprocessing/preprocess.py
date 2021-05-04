@@ -27,8 +27,8 @@ class PreprocessPipeline:
         self.infer_longitudinal(input_dict)
         self.validate_input(input_dict)
         self.input_dict = input_dict
+        # print(self.input_dict)
         self.rearrange_inputs()
-        print(self.input_dict)
         self.expand_input_dict()
 
         self.validate_output(output_dir)
@@ -102,9 +102,15 @@ class PreprocessPipeline:
         Rearanges inputs dictionary to match corresponding sessions for ease
         of use.
         """
-        num_sessions = len([self.input_dict.get("ap")])
+        num_sessions = len(
+            self.input_dict.get("ap")
+            if isinstance(self.input_dict.get("ap"), list)
+            else [self.input_dict.get("ap")]
+        )
+        print(num_sessions)
         updated_dict = {}
         for session in range(num_sessions):
+            print(session)
             session_label = f"ses-{session+1}"
             updated_dict[session_label] = {}
             for key, vals in self.input_dict.items():
@@ -410,6 +416,7 @@ class PreprocessPipeline:
         in native-space.
         """
         for session, session_dict in self.input_dict.items():
+            print(session)
             target_dir = self.output_dict.get(session).get("directory")
             self.convert_format(session, session_dict, target_dir)
             self.average_b0(
