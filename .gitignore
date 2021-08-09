@@ -140,6 +140,7 @@ dmypy.json
 cython_debug/
 
 # Trials files
-for_trials.py
+for_trials*.py
 trials.ipynb
 dwifslpreproc*
+example.py
