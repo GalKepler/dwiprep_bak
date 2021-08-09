@@ -3,7 +3,7 @@ from pathlib import Path
 
 from nipype.interfaces import mrtrix3 as mrt
 
-COMMAND = "dwifslpreproc {ap} {out_file} -pe_dir {pe_dir} -align_seepi -rpe_pair -eddy_options ' --slm=linear' -se_epi {merged} -nthreads 16"  # noqa: E501
+COMMAND = "dwifslpreproc {ap} {out_file} -pe_dir {pe_dir} -align_seepi -rpe_pair -eddy_options ' --slm=linear' -se_epi {merged} -nthreads 12"  # noqa: E501
 
 
 def extract_b0(in_file: Path, out_b0s: Path, out_file: Path):
