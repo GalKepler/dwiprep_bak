@@ -141,6 +141,7 @@ cython_debug/
 
 # Trials files
 for_trials*.py
+setup_original*
 trials.ipynb
 dwifslpreproc*
 example.py
